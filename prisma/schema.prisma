@@ -1,0 +1,223 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Artisan {
+  id Int @id @default(autoincrement())
+  fullName String
+  country String
+  biography String @db.Text
+  artwork Artwork[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fullName, country])
+}
+
+model Artwork{
+  id Int @id @default(autoincrement())
+  title String
+  description String @db.Text
+  media ArtworkMedia[]
+  yearCreated Int?
+  category Category
+  widthCm Float?
+  heightCm Float?
+  weightKg Float?
+  isUnique Boolean @default(true)
+  isAvailable Boolean @default(true)
+  isFeatured Boolean @default(false)
+  culturalOrigin String
+  artisanId Int?
+  artisan Artisan? @relation(fields: [artisanId], references: [id])
+  wishList WishList[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
+  reviews Review[]
+  price Float
+  currency String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([title, isFeatured, isAvailable, price])
+}
+
+enum Category {
+  PAINTING
+  SCULPTURE
+  TEXTILE
+  JEWELRY
+  OTHER
+}
+
+model ArtworkMedia{
+  id        Int      @id @default(autoincrement())
+  url       String   @db.VarChar(2048) 
+  publicId  String   
+  type      MediaType
+  width     Int?     
+  height    Int?     
+  duration  Int?     
+  format    String?  
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artworkId]) 
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model WishList{
+  id Int @id @default(autoincrement())
+  customerId Int
+  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  artworkId Int
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([customerId, artworkId])
+}
+
+model CartItem {
+  id Int @id @default(autoincrement())
+  artworkId Int
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  cartId Int
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  quantity Int
+  price Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id Int @id @default(autoincrement())
+  customerId Int
+  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items CartItem[]
+  totalAmount Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model OrderItem{
+  id Int @id @default(autoincrement())
+  artworkId Int
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  quantity Int
+  price Float
+  orderId Int
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order{
+  id Int @id @default(autoincrement())
+  customerId Int
+  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shippingAddressId Int?
+  shippingAddress Address? @relation(fields: [shippingAddressId], references: [id])
+  items OrderItem[]
+  totalAmount Float
+  status OrderStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId, shippingAddressId, status])
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int      // e.g. 1–5
+  comment   String?
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId Int
+  customer  User @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  fullName   String
+  phone      String
+  email      String? 
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  country    String
+  postalCode String?
+  isDefault Boolean @default(false)
+  userId Int?
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fullName, email, country, city])
+}
+
+
+model User {
+  id Int @id @default(autoincrement())
+  fullName String
+  email String @unique
+  phone String?
+  address Address[]
+  password String
+  role Role @default(CUSTOMER)
+  isActive Boolean @default(true)
+  wishList WishList[]
+  cart Cart[]
+  orders Order[]
+  reviews Review[]
+  refreshTokens RefreshToken[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fullName, email, role])
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String
+  expiryDate DateTime
+  userId  Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

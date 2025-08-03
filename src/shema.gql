@@ -1,0 +1,425 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type ArtisanModel {
+  id: Int!
+  fullName: String!
+  country: String!
+  biography: String!
+  artwork: [ArtworkModel!]!
+}
+
+type OrderItemModel {
+  id: Int!
+  artwork: ArtworkModel!
+  quantity: Int!
+  price: Float!
+  order: OrderModel!
+}
+
+type ReviewsModel {
+  id: Int!
+  rating: Int!
+  comment: String
+  artwork: ArtworkModel!
+  customer: UserModel!
+}
+
+type ArtworkMediaModel {
+  id: Int!
+  url: String!
+  type: MediaType!
+  artwork: ArtworkModel!
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+type ArtworkModel {
+  id: Int!
+  title: String!
+  description: String!
+  media: [ArtworkMediaModel!]!
+  yearCreated: Int
+  category: Category!
+  widthCm: Float
+  heightCm: Float
+  weightKg: Float
+  isUnique: Boolean!
+  isAvailable: Boolean!
+  isFeatured: Boolean!
+  culturalOrigin: String!
+  artisan: ArtisanModel
+  wishList: [WishListModel!]!
+  orderItems: [OrderItemModel!]!
+  reviews: [ReviewsModel!]!
+  price: Float!
+  currency: String!
+}
+
+enum Category {
+  PAINTING
+  SCULPTURE
+  TEXTILE
+  JEWELRY
+  OTHER
+}
+
+type WishListModel {
+  id: Int!
+  customer: UserModel!
+  artwork: ArtworkModel!
+}
+
+type UserModel {
+  id: Int!
+  fullName: String!
+  email: String!
+  phone: String
+  address: [AddressModel!]!
+  password: String!
+  role: Role!
+  isActive: Boolean!
+  wishList: [WishListModel!]!
+  Orders: [OrderModel!]!
+  reviews: [ReviewsModel!]!
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+type OrderModel {
+  id: Int!
+  customer: UserModel!
+  shippingAddress: AddressModel
+  Items: [OrderItemModel!]!
+  totalAmount: Float!
+  status: OrderStatus!
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+type AddressModel {
+  id: Int!
+  fullName: String!
+  phone: String!
+  email: String
+  line1: String!
+  line2: String
+  city: String!
+  state: String
+  country: String!
+  postalCode: String
+  isDefault: Boolean!
+  customer: UserModel
+  orders: [OrderModel!]!
+}
+
+"""authentication response"""
+type AuthResponse {
+  """auth access_token"""
+  accessToken: String!
+
+  """auth refresh_token"""
+  refreshToken: String!
+  user: UserModel!
+}
+
+"""refresh_tokens response"""
+type AuthRefreshResponse {
+  """auth access_token"""
+  accessToken: String!
+
+  """auth refresh_token"""
+  refreshToken: String!
+}
+
+type LogoutResponse {
+  success: Boolean!
+  message: String!
+}
+
+type CartItem {
+  id: Int!
+  artwork: ArtworkModel!
+  quantity: Int!
+  price: Float!
+}
+
+type Cart {
+  id: Int!
+  items: [CartItem!]!
+  customer: UserModel!
+  totalAmount: Float!
+}
+
+type Query {
+  getArtwork(searchInput: SearchArtworkInput!): [ArtworkModel!]!
+  getNewArrivals: [ArtworkModel!]!
+  getArtworkById(artworkId: Float!): ArtworkModel!
+  getArtisans(searchInput: SearchArtisanInput!): [ArtisanModel!]!
+  getArtisanById(artisanId: Float!): ArtisanModel!
+  getWishList: [WishListModel!]!
+  getWishListById(wishListId: Float!): WishListModel!
+  getOrderItems: [OrderItemModel!]!
+  getOrderItemById(orderItemId: Float!): OrderItemModel!
+  getOrders(searchInput: SearchOrdersInput!): [OrderModel!]!
+  getOrderById(orderId: Float!): OrderModel!
+  getReviews: [ReviewsModel!]!
+  getReviewsById(reviewsId: Float!): ReviewsModel!
+  getAddresses: [AddressModel!]!
+  getAddressById(addressId: Float!): AddressModel!
+  getUsers(searchInput: SearchUsersInput!): [UserModel!]!
+  getUserById(userId: Float!): UserModel!
+  getCartItems(clientId: Float!): [CartItem!]!
+  getCarts: [Cart!]!
+  getClientCart(clientId: Float!): Cart
+}
+
+input SearchArtworkInput {
+  keyword: String
+  category: Category
+  yearCreated: Int
+  minPrice: Float
+  maxPrice: Float
+  isAvailable: Boolean = true
+  isFeatured: Boolean
+}
+
+input SearchArtisanInput {
+  fullName: String
+  country: String
+}
+
+input SearchOrdersInput {
+  customerName: String
+  status: OrderStatus
+  dateFrom: DateTime
+  dateTo: DateTime
+  minTotal: Float
+  maxTotal: Float
+  city: String
+  country: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input SearchUsersInput {
+  keyword: String
+  role: Role
+}
+
+type Mutation {
+  addArtwork(addArtworkInput: AddArtworkInput!): ArtworkModel!
+  updateArtwork(artworkId: Float!, updateArtworkInput: UpdateArtworkInput!): ArtworkModel!
+  deleteArtwork(artworkId: Float!): String!
+  addArtisan(addArtisanInput: AddArtisanInput!): ArtisanModel!
+  updateArtisan(artisanId: Float!, updateArtisanInput: UpdateArtisanInput!): ArtisanModel!
+  deleteArtisan(artisanId: Float!): String!
+  addArtworkMedia(addMediaInput: AddArtworkMediaInput!): ArtworkMediaModel!
+  deleteArtworkMedia(id: Float!): ArtworkMediaModel!
+  addWishList(addWishListInput: AddWishListInput!): WishListModel!
+  updateWishList(wishListId: Float!, updateWishlistInput: UpdateWishListInput!): WishListModel!
+  deleteWishList: String!
+  addOrderItem(addOrderItemInput: AddOrderItemInput!): OrderItemModel!
+  updateOrderItem(orderItemId: Float!, updateOrderItemInput: UpdateOrderItemInput!): OrderItemModel!
+  deleteOrderItem(orderItemId: Float!): String!
+  addOrder(addOrderInput: AddOrderInput!): OrderModel!
+  updateOrder(orderId: Float!, updateOrderInput: UpdateOrderInput!): OrderModel!
+  deleteOrder(orderId: Float!): String!
+  addReviews(addReviewsInput: AddReviewsInput!): ReviewsModel!
+  updateReviews(reviewsId: Float!, updateReviewsInput: UpdateReviewsInput!): ReviewsModel!
+  deleteReviews(reviewsId: Float!): String!
+  addAddress(addAddressInput: AddAddressInput!): AddressModel!
+  updateAddress(addressId: Float!, updateAddressInput: UpdateAddressInput!): AddressModel!
+  deleteAddress(addressId: Float!): String!
+  signUp(signUpData: AddUserInput!): UserModel!
+  signIn(signInData: SigInInput!): AuthResponse!
+  refreshTokens(refreshToken: String!): AuthRefreshResponse!
+  logout(refreshToken: String!): LogoutResponse!
+  updateUser(userId: Float!, updateInput: UpdateUserInput!): UserModel!
+  deleteUser(userId: Float!): String!
+  addCartItem(addItemInput: AddCartItemInput!, clientId: Float!): CartItem!
+  cartItemIncrement(itemId: Float!, clientId: Float!): CartItem!
+  cartItemDecrement(itemId: Float!, clientId: Float!): CartItem!
+  deleteCartItem(itemId: Float!, clientId: Float!): String!
+}
+
+input AddArtworkInput {
+  title: String!
+  description: String!
+  yearCreated: Int
+  category: Category!
+  widthCm: Float
+  heightCm: Float
+  weightKg: Float
+  isUnique: Boolean! = true
+  isAvailable: Boolean! = true
+  isFeatured: Boolean! = false
+  culturalOrigin: String!
+  artisanId: Int
+  price: Float!
+  currency: String!
+}
+
+input UpdateArtworkInput {
+  title: String
+  description: String
+  yearCreated: Int
+  category: Category
+  widthCm: Float
+  heightCm: Float
+  weightKg: Float
+  isUnique: Boolean = true
+  isAvailable: Boolean = true
+  isFeatured: Boolean = false
+  culturalOrigin: String
+  artisanId: Int
+  price: Float
+  currency: String
+}
+
+input AddArtisanInput {
+  fullName: String!
+  country: String!
+  biography: String!
+}
+
+input UpdateArtisanInput {
+  fullName: String
+  country: String
+  biography: String
+}
+
+input AddArtworkMediaInput {
+  file: Upload!
+  artworkId: Int!
+  type: MediaType!
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
+
+input AddWishListInput {
+  customerId: Int!
+  artworkId: Int!
+}
+
+input UpdateWishListInput {
+  customerId: Int
+  artworkId: Int
+}
+
+input AddOrderItemInput {
+  artworkId: Int!
+  quantity: Int!
+  orderId: Int!
+  price: Float!
+}
+
+input UpdateOrderItemInput {
+  artworkId: Int
+  quantity: Int
+  orderId: Int
+  price: Float
+}
+
+input AddOrderInput {
+  customerId: Int!
+  shippingAddressId: Int
+  totalAmount: Float!
+  status: OrderStatus! = PENDING
+}
+
+input UpdateOrderInput {
+  customerId: Int
+  shippingAddressId: Int
+  totalAmount: Float
+  status: OrderStatus = PENDING
+}
+
+input AddReviewsInput {
+  rating: Int!
+  comment: String
+  artworkId: Int!
+  customerId: Int!
+}
+
+input UpdateReviewsInput {
+  rating: Int
+  comment: String
+  artworkId: Int
+  customerId: Int
+}
+
+input AddAddressInput {
+  fullName: String!
+  phone: String!
+  email: String
+  line1: String!
+  line2: String
+  city: String!
+  state: String
+  country: String!
+  postalCode: String
+  isDefault: Boolean! = false
+  customerId: Int
+}
+
+input UpdateAddressInput {
+  fullName: String
+  phone: String
+  email: String
+  line1: String
+  line2: String
+  city: String
+  state: String
+  country: String
+  postalCode: String
+  isDefault: Boolean = false
+  customerId: Int
+}
+
+input AddUserInput {
+  fullName: String!
+  email: String!
+  phone: String
+  password: String!
+  role: Role! = CUSTOMER
+  isActive: Boolean! = true
+}
+
+input SigInInput {
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  fullName: String
+  email: String
+  phone: String
+  password: String
+  role: Role = CUSTOMER
+  isActive: Boolean = true
+}
+
+input AddCartItemInput {
+  artworkId: Int!
+  cartId: Int
+  quantity: Int!
+  price: Float!
+}
