@@ -66,6 +66,7 @@ export class AuthService {
 
             const tokens = await this.generateTokens({
                 id: user.id,
+                name: user.fullName,
                 email: user.email,
                 role: user.role
             })
@@ -86,18 +87,21 @@ export class AuthService {
         }
     }
 
-    async generateTokens(user: {id: number, email: string, role: string}) {
+    async generateTokens(user: {id: number, name: string, email: string, role: string}) {
         const accessToken = this.jwtService.sign({
             sub: user.id,
+            name: user.name,
             email: user.email,
             role: user.role
         },
         {expiresIn: process.env.JWT_EXPIRY_DATE || '15m'}
     )
+    
     const refreshTokenPlain = uuid()
     const hashedRefreshToken = await bcrypt.hash(refreshTokenPlain, 10)
 
-    await this.storeRefreshToken(hashedRefreshToken, user.id)
+    // await this.storeRefreshToken(hashedRefreshToken, user.id)
+    await this.storeRefreshToken(refreshTokenPlain, user.id)
 
     return {
         accessToken,
@@ -152,6 +156,7 @@ export class AuthService {
            // Generate new tokens
            return await this.generateTokens({
             id: user.id,
+            name: user.fullName,
             email: user.email,
             role: user.role
            })
@@ -167,7 +172,10 @@ export class AuthService {
             where: { token: refreshToken}
         })
 
-        if(!tokenRecord || !(await bcrypt.compare(refreshToken, tokenRecord.token))) {
+        // if(!tokenRecord || !(await bcrypt.compare(refreshToken, tokenRecord.token))) {
+        //     throw new NotFoundException("No token found")
+        // }
+        if(!tokenRecord) {
             throw new NotFoundException("No token found")
         }
 

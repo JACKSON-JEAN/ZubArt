@@ -6,6 +6,9 @@ export class CartItem {
     @Field(() => Int)
     id: number
 
+    @Field(() => Int)
+    artworkId: number
+
     @Field(() => ArtworkModel)
     artwork: ArtworkModel
 

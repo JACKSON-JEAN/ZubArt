@@ -152,6 +152,7 @@ type LogoutResponse {
 
 type CartItem {
   id: Int!
+  artworkId: Int!
   artwork: ArtworkModel!
   quantity: Int!
   price: Float!

@@ -31,7 +31,10 @@ export class CartService {
                 include: {
                     customer: true,
                     items: {
-                        include: {artwork: true}
+                        include: {artwork: true},
+                        orderBy: {
+                            id: "desc"
+                        }
                     }
                 }
             })
