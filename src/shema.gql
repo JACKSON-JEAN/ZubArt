@@ -171,6 +171,7 @@ type Query {
   getArtworkById(artworkId: Float!): ArtworkModel!
   getArtisans(searchInput: SearchArtisanInput!): [ArtisanModel!]!
   getArtisanById(artisanId: Float!): ArtisanModel!
+  artworkMedia(artworkId: Int!): [ArtworkMediaModel!]!
   getWishList: [WishListModel!]!
   getWishListById(wishListId: Float!): WishListModel!
   getOrderItems: [OrderItemModel!]!

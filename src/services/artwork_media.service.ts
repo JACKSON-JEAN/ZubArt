@@ -70,6 +70,26 @@ export class ArtworkMediaService {
     }
   }
 
+  async getArtworkMedia(artworkId: number): Promise<ArtworkMedia[]> {
+    // Validate artwork exists
+    const artworkExists = await this.prisma.artwork.findUnique({
+      where: { id: artworkId },
+    });
+    
+    if (!artworkExists) {
+      throw new NotFoundException(`Artwork with ID ${artworkId} not found`);
+    }
+  
+    // Fetch all media for this artwork
+    return this.prisma.artworkMedia.findMany({
+      where: { artworkId },
+      orderBy: { createdAt: 'desc' }, // Newest first
+      include: {
+        artwork: true // Include related artwork data if needed
+      }
+    });
+  }
+
   async deleteArtworkMedia(id: number): Promise<ArtworkMedia> {
     // 1. Find the media record
     const media = await this.prisma.artworkMedia.findUnique({

@@ -18,9 +18,17 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe())
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'apollo-require-preflight' // Critical for file uploads
+    ],
     credentials: true,
+    maxAge: 86400,
   })
+  app.use(json({ limit: '50mb' }));
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.listen(process.env.PORT ?? 4000);
 }

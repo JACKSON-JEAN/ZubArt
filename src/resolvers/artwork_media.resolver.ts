@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { ArtworkMediaModel } from '../graphql/models/artworkMedia.model';
 import { ArtworkMediaService } from '../services/artwork_media.service';
 import { AddArtworkMediaInput } from '../graphql/input/add_artworkMedia.input';
@@ -13,6 +13,14 @@ export class ArtworkMediaResolver {
   ) {
     return this.mediaService.addArtworkMedia(input);
   }
+
+  @Query(() => [ArtworkMediaModel])
+async artworkMedia(
+  @Args('artworkId', { type: () => Int }) artworkId: number
+) {
+  console.log('Received artworkId:', artworkId, typeof artworkId);
+  return this.mediaService.getArtworkMedia(artworkId);
+}
 
   @Mutation(() => ArtworkMediaModel)
   async deleteArtworkMedia(@Args('id') id: number) {

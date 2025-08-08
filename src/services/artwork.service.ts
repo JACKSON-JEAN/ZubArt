@@ -84,7 +84,7 @@ export class ArtworkService {
             return await this.prismaService.artwork.findMany({
                 where: {isAvailable: true},
                 orderBy: {
-                    createdAt: "desc"
+                    createdAt: "asc"
                 },
                 include: {
                     media: true,
