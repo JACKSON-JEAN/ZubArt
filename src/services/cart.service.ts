@@ -31,9 +31,9 @@ export class CartService {
                 include: {
                     customer: true,
                     items: {
-                        include: {artwork: true},
+                        include: {artwork: {include: {media: true}}},
                         orderBy: {
-                            id: "desc"
+                            createdAt: "desc"
                         }
                     }
                 }
