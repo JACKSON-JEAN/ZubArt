@@ -99,7 +99,7 @@ export class ArtworkService {
 
     async getArtworkById(artworkId: number){
         const artwork = await this.prismaService.artwork.findUnique({
-            where: {id: artworkId, isAvailable: true},
+            where: {id: artworkId},
             include: {
                 media: true,
                 artisan: true,
