@@ -15,6 +15,9 @@ export class AddArtworkInput {
     @Field(()=> String)
     description: string
 
+    @Field(()=> String, {nullable: true})
+    material?: string
+
     @Field(()=> Int, {nullable: true})
     yearCreated?: number
 

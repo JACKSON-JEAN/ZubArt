@@ -19,6 +19,7 @@ export class ArtworkService {
                 data: {
                     title: artworkinput.title,
                     description: artworkinput.description,
+                    material: artworkinput.material || null,
                     yearCreated: artworkinput.yearCreated || null,
                     category: artworkinput.category,
                     widthCm: artworkinput.widthCm || null,

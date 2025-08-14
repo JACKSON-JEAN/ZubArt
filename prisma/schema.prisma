@@ -36,6 +36,7 @@ model Artwork{
   widthCm Float?
   heightCm Float?
   weightKg Float?
+  material String?
   isUnique Boolean @default(true)
   isAvailable Boolean @default(true)
   isFeatured Boolean @default(false)

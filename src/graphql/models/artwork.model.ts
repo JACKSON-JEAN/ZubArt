@@ -21,6 +21,9 @@ export class ArtworkModel {
     @Field(()=> String)
     description: string
 
+    @Field(()=> String, {nullable: true})
+    material?: string
+
     @Field(()=> [ArtworkMediaModel])
     media: ArtworkMediaModel[]
 

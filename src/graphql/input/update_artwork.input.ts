@@ -14,6 +14,9 @@ export class UpdateArtworkInput {
     @Field(()=> String, {nullable: true})
     description?: string
 
+    @Field(()=> String, {nullable: true})
+    material?: string
+
     @Field(()=> Int, {nullable: true})
     yearCreated?: number
 
