@@ -47,7 +47,6 @@ export class ArtworkService {
             return await this.prismaService.artwork.findMany({
                 where: {
                     AND: [
-                        {isAvailable},
                         category ? {category} : {},
                         yearCreated ? {yearCreated} : {},
                         isFeatured !== undefined ? {isFeatured} : {},
