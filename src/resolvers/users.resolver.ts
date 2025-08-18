@@ -4,18 +4,17 @@ import { UpdateUserInput } from "../graphql/input/update_user.input";
 import { UsersService } from "../services/users.service";
 import { SearchUsersInput } from "../graphql/input/search_users.input";
 import { UseGuards } from "@nestjs/common";
-import { JwtGuard } from "src/guards/auth.guard";
+import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
 import { RolesGuard } from "src/guards/roles.guard";
 import { Roles } from "src/decorators/roles.decorator";
 
 @Resolver(() => UserModel)
-@UseGuards(JwtGuard)
 export class UsersResolver {
     constructor(private usersService: UsersService) {}
 
-    @UseGuards(JwtGuard, RolesGuard) // JwtGuard first, then RolesGuard
-    @Roles('ADMIN')
     @Query(() => [UserModel])
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN')
     async getUsers(@Args('searchInput') searchInput: SearchUsersInput) {
         return await this.usersService.getUsers(searchInput)
     }

@@ -5,10 +5,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PassportModule } from "@nestjs/passport";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthResolver } from "../resolvers/auth.resolver";
-import { JwtGuard } from "../guards/jwt.guard";
-import { RolesGuard } from "../guards/roles.guard";
-
-import { JwtStrategy } from '../strategies/jwt.strategy';
+import { JwtStrategy } from "../strategies/jwt.strategy";
 
 @Module({
   imports: [
@@ -26,7 +23,7 @@ import { JwtStrategy } from '../strategies/jwt.strategy';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, AuthResolver, JwtGuard, RolesGuard, JwtStrategy], // <-- add JwtStrategy
+  providers: [AuthService, AuthResolver, JwtStrategy],
   exports: [JwtModule, PassportModule],
 })
 export class AuthModule {}
