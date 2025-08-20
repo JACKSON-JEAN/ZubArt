@@ -13,10 +13,16 @@ export class ReviewsModel {
     @Field(() => String, {nullable: true})
     comment?: string
 
-    @Field(() => ArtworkModel)
-    artwork: ArtworkModel
+    @Field(() => String, {nullable: true})
+    clientName?: string
 
-    @Field(() => UserModel)
-    customer: UserModel
+    @Field(() => ArtworkModel, {nullable: true})
+    artwork?: ArtworkModel
+
+    @Field(() => UserModel, {nullable: true})
+    customer?: UserModel
+
+    @Field(() => Boolean, {nullable: true, defaultValue: false})
+    isActive?: boolean
 
 }

@@ -22,8 +22,10 @@ type ReviewsModel {
   id: Int!
   rating: Int!
   comment: String
-  artwork: ArtworkModel!
-  customer: UserModel!
+  clientName: String
+  artwork: ArtworkModel
+  customer: UserModel
+  isActive: Boolean
 }
 
 type ArtworkMediaModel {
@@ -361,7 +363,9 @@ input AddReviewsInput {
   rating: Int!
   comment: String
   artworkId: Int!
-  customerId: Int!
+  customerId: Int
+  clientName: String
+  isActive: Boolean = false
 }
 
 input UpdateReviewsInput {
@@ -369,6 +373,8 @@ input UpdateReviewsInput {
   comment: String
   artworkId: Int
   customerId: Int
+  clientName: String
+  isActive: Boolean = false
 }
 
 input AddAddressInput {

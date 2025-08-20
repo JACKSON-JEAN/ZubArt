@@ -11,7 +11,13 @@ export class AddReviewsInput {
     @Field(() => Int)
     artworkId: number
 
-    @Field(() => Int)
-    customerId: number
+    @Field(() => Int, {nullable: true})
+    customerId?: number
+
+    @Field(() => String, {nullable: true})
+    clientName?: string
+
+    @Field(() => Boolean, {nullable: true, defaultValue: false})
+    isActive?: boolean
 
 }

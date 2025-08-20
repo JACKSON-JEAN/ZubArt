@@ -9,7 +9,7 @@ export class ReviewsService {
 
     async addReviews(addReviewsInput: AddReviewsInput) {
         const {rating, artworkId, customerId} = addReviewsInput
-        if(!rating || !artworkId || !customerId) {
+        if(!rating || !artworkId) {
             throw new BadRequestException("Please fill all the neccessary fields")
         }
 
@@ -19,7 +19,9 @@ export class ReviewsService {
                     rating: addReviewsInput.rating,
                     comment: addReviewsInput.comment,
                     artworkId: addReviewsInput.artworkId,
-                    customerId: addReviewsInput.customerId
+                    customerId: addReviewsInput.customerId,
+                    clientName: addReviewsInput.clientName,
+                    isActive: addReviewsInput.isActive || false
                 }
             })
             return addedReviews
@@ -32,6 +34,9 @@ export class ReviewsService {
     async getReviews() {
         try {
             return await this.prismaService.review.findMany({
+                where: {
+                    isActive: true,
+                },
                 include: {
                     artwork: true,
                     customer: true

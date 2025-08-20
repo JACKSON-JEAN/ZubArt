@@ -14,4 +14,10 @@ export class UpdateReviewsInput {
     @Field(() => Int, {nullable: true})
     customerId?: number
 
+    @Field(() => String, {nullable: true})
+    clientName?: string
+
+    @Field(() => Boolean, {nullable: true, defaultValue: false})
+    isActive?: boolean
+
 }
