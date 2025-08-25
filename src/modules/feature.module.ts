@@ -10,6 +10,7 @@ import { OrderModule } from "./order.module";
 import { OrderItemModule } from "./order_item.module";
 import { PrismaModule } from "./prisma.module";
 import { ReviewModule } from "./review.module";
+import { SubscriberModule } from "./subscriber.module";
 import { UsersModule } from "./users.module";
 import { WishListModule } from "./wishList.module";
 
@@ -27,5 +28,6 @@ export const FeatureModule = [
     UsersModule,
     CloudinaryModule,
     CartItemModule,
-    CartModule
+    CartModule,
+    SubscriberModule,
 ]

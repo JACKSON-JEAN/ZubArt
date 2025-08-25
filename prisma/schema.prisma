@@ -170,6 +170,19 @@ model Review {
   updatedAt DateTime @updatedAt
 }
 
+model Subscriber{
+  id Int @id @default(autoincrement())
+  email String @unique
+  status SubscriberStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+}
+
+enum SubscriberStatus{
+  ACTIVE
+  INACTIVE
+}
+
 model Address {
   id         Int      @id @default(autoincrement())
   fullName   String

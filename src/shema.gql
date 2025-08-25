@@ -168,6 +168,17 @@ type Cart {
   totalAmount: Float!
 }
 
+type SubscriberModel {
+  id: Float!
+  email: String!
+  status: SubscriberStatus!
+}
+
+enum SubscriberStatus {
+  ACTIVE
+  INACTIVE
+}
+
 type Query {
   getArtwork(searchInput: SearchArtworkInput!): [ArtworkModel!]!
   getNewArrivals: [ArtworkModel!]!
@@ -190,6 +201,7 @@ type Query {
   getCartItems(clientId: Float!): [CartItem!]!
   getCarts: [Cart!]!
   getClientCart(clientId: Float!): Cart
+  getSubscribers: [SubscriberModel!]!
 }
 
 input SearchArtworkInput {
@@ -262,6 +274,7 @@ type Mutation {
   cartItemIncrement(itemId: Float!, clientId: Float!): CartItem!
   cartItemDecrement(itemId: Float!, clientId: Float!): CartItem!
   deleteCartItem(itemId: Float!, clientId: Float!): String!
+  addSubscriber(addSubscriberInput: AddSubscriberInput!): SubscriberModel!
 }
 
 input AddArtworkInput {
@@ -433,4 +446,9 @@ input AddCartItemInput {
   cartId: Int
   quantity: Int!
   price: Float!
+}
+
+input AddSubscriberInput {
+  email: String!
+  status: SubscriberStatus! = ACTIVE
 }
