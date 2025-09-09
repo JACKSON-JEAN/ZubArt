@@ -17,6 +17,10 @@ export class AddressResolver {
     async getAddresses() {
         return await this.addressService.getAddresses()
     }
+    @Query(() => [AddressModel])
+    async getAddressesByCustomerId(@Args("customerId") customerId: number) {
+        return await this.addressService.getAddressesByCustomerId(customerId)
+    }
 
     @Query(() => AddressModel)
     async getAddressById(@Args("addressId") addressId: number) {

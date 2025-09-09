@@ -126,7 +126,7 @@ type AddressModel {
   postalCode: String
   isDefault: Boolean!
   customer: UserModel
-  orders: [OrderModel!]!
+  orders: [OrderModel!]
 }
 
 """authentication response"""
@@ -195,6 +195,7 @@ type Query {
   getReviews: [ReviewsModel!]!
   getReviewsById(reviewsId: Float!): ReviewsModel!
   getAddresses: [AddressModel!]!
+  getAddressesByCustomerId(customerId: Float!): [AddressModel!]!
   getAddressById(addressId: Float!): AddressModel!
   getUsers(searchInput: SearchUsersInput!): [UserModel!]!
   getUserById(userId: Float!): UserModel!

@@ -40,6 +40,6 @@ export class AddressModel {
     @Field(() => UserModel, {nullable: true})
     customer?: UserModel
 
-    @Field(() => [OrderModel])
-    orders: OrderModel[]
+    @Field(() => [OrderModel], {nullable: true})
+    orders?: OrderModel[]
 }

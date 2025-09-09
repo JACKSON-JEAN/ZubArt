@@ -8,9 +8,17 @@ export class AddressService {
     constructor(private prismaService: PrismaService) {}
 
     async addAddress(addAddressInput: AddAddressInput) {
-        const {fullName, phone, line1, city, country} = addAddressInput
+        const {fullName, phone, line1, city, country, customerId} = addAddressInput
         if(!fullName || !phone || !line1 || !city || !country) {
             throw new BadRequestException("Please fill all the necessary fields")
+        }
+
+        const customer = await this.prismaService.user.findUnique({
+            where: {id: customerId}
+        })
+
+        if(!customer){
+            throw new NotFoundException(`Client with ID: ${customerId} not found!`)
         }
 
         try {
@@ -32,8 +40,26 @@ export class AddressService {
             return addedAddress
 
         } catch (error) {
+            console.error(error)
             throw new InternalServerErrorException("There was an error when adding an address")
         }
+    }
+
+    async getAddressesByCustomerId(customerId: number){
+        const customer = await this.prismaService.user.findUnique({
+            where: {id: customerId},
+            include: {address: {
+                orderBy: {
+                    id: "desc"
+                }
+            }},
+        })
+
+        if(!customer){
+            throw new NotFoundException(`No user with ID: ${customerId} found!`)
+        }
+
+        return customer.address
     }
 
     async getAddresses() {
@@ -45,6 +71,7 @@ export class AddressService {
                 }
             })
         } catch (error) {
+            console.error(error)
             throw new InternalServerErrorException("There was an error when fetching addresses")
         }
     }
@@ -81,6 +108,7 @@ export class AddressService {
             return updatedAddress
 
         } catch (error) {
+            console.error(error)
            throw new InternalServerErrorException("There was an error when updating address") 
         }
     }
@@ -101,6 +129,7 @@ export class AddressService {
             return "Address deleted successfully"
             
         } catch (error) {
+            console.error(error)
             throw new InternalServerErrorException("There was an error when deleting address")
         }
     }
