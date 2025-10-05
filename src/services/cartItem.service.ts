@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
     Injectable,
     InternalServerErrorException,
     UnauthorizedException,
@@ -12,6 +13,22 @@ import {
   
     async addCartItem(addItemInput: AddCartItemInput, clientId: number) {
       const { artworkId, quantity, price } = addItemInput;
+
+      const artwork = await this.prisma.artwork.findUnique({
+        where: { id: artworkId },
+      });
+
+      if (!artwork?.isAvailable) {
+        throw new BadRequestException('This artwork is no longer available');
+      }
+
+      await this.prisma.artwork.update({
+        where: { id: artworkId },
+        data: { 
+          reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+          isAvailable: false
+        }
+      });
   
       let cart = await this.prisma.cart.findFirst({
         where: { customerId: clientId },
@@ -70,11 +87,15 @@ import {
     async cartItemIncrement(itemId: number, clientId: number) {
       const cartItem = await this.prisma.cartItem.findUnique({
         where: { id: itemId },
-        include: { cart: true },
+        include: { cart: true, artwork: true },
       });
   
       if (!cartItem || cartItem.cart.customerId !== clientId) {
         throw new UnauthorizedException("You do not have permission to modify this item.");
+      }
+
+      if (!cartItem.artwork.isAvailable) {
+        throw new BadRequestException('This artwork is no longer available');
       }
   
       try {
@@ -95,7 +116,7 @@ import {
     async cartItemDecrement(itemId: number, clientId: number) {
       const cartItem = await this.prisma.cartItem.findUnique({
         where: { id: itemId },
-        include: { cart: true },
+        include: { cart: true, artwork: true },
       });
   
       if (!cartItem || cartItem.cart.customerId !== clientId) {
@@ -124,6 +145,14 @@ import {
       try {
         const deletedItem = await this.prisma.cartItem.delete({
           where: { id: itemId },
+        });
+
+        await this.prisma.artwork.update({
+          where: { id: cartItem.artworkId },
+          data: {
+            isAvailable: true,
+            reservedUntil: null
+          }
         });
   
         const remainingItems = await this.prisma.cartItem.findMany({
@@ -159,6 +188,14 @@ import {
       try {
         await this.prisma.cartItem.delete({
           where: { id: itemId },
+        });
+
+        await this.prisma.artwork.update({
+          where: { id: cartItem.artworkId },
+          data: {
+            isAvailable: true,
+            reservedUntil: null
+          }
         });
   
         const remainingItems = await this.prisma.cartItem.findMany({

@@ -6,8 +6,12 @@ import { AuthModule } from "./auth.module";
 import { CartModule } from "./cart.module";
 import { CartItemModule } from "./cartItem.module";
 import { CloudinaryModule } from "./cloudinary.module";
+import { EmailModule } from "./email.module";
+import { InventoryModule } from "./inventory.module";
+import { MessagesModule } from "./messages.module";
 import { OrderModule } from "./order.module";
 import { OrderItemModule } from "./order_item.module";
+import { PaymentModule } from "./Payment.module";
 import { PrismaModule } from "./prisma.module";
 import { ReviewModule } from "./review.module";
 import { SubscriberModule } from "./subscriber.module";
@@ -30,4 +34,8 @@ export const FeatureModule = [
     CartItemModule,
     CartModule,
     SubscriberModule,
+    PaymentModule,
+    InventoryModule,
+    EmailModule,
+    MessagesModule
 ]

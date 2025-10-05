@@ -39,6 +39,7 @@ model Artwork{
   material String?
   isUnique Boolean @default(true)
   isAvailable Boolean @default(true)
+  reservedUntil DateTime?
   isFeatured Boolean @default(false)
   culturalOrigin String
   artisanId Int?
@@ -121,6 +122,23 @@ model Cart {
   @@index([customerId])
 }
 
+model Payment {
+  id Int @id @default(autoincrement())
+  orderId Int
+  order Order @relation(fields: [orderId], references: [id])
+  amount Float
+  currency String @default("USD")
+  paymentMethod String
+  paymentProvider String?
+  paymentReference String @unique
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId, paymentReference])
+
+}
+
 model OrderItem{
   id Int @id @default(autoincrement())
   artworkId Int
@@ -140,6 +158,9 @@ model Order{
   shippingAddressId Int?
   shippingAddress Address? @relation(fields: [shippingAddressId], references: [id])
   items OrderItem[]
+  paymentReference String? @unique
+  paymentProvider  String?
+  payments Payment[]
   totalAmount Float
   status OrderStatus @default(PENDING)
   createdAt DateTime @default(now())
@@ -150,6 +171,8 @@ model Order{
 
 enum OrderStatus {
   PENDING
+  FAILED
+  PAID
   PROCESSING
   SHIPPED
   DELIVERED
@@ -178,7 +201,7 @@ model Subscriber{
   updateAt DateTime @updatedAt
 }
 
-enum SubscriberStatus{
+enum SubscriberStatus {
   ACTIVE
   INACTIVE
 }
@@ -236,4 +259,19 @@ model RefreshToken {
   expiryDate DateTime
   userId  Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message{
+  id Int @id @default(autoincrement())
+  fullName String
+  email String
+  message String @db.Text
+  status MessageStatus @default(Unread)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MessageStatus {
+  Read
+  Unread
 }

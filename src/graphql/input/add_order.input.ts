@@ -7,9 +7,6 @@ registerEnumType(OrderStatus, {
 
 @InputType()
 export class AddOrderInput {
-    @Field(() => Int)
-    customerId: number
-
     @Field(() => Int, { nullable: true})
     shippingAddressId?: number
 
@@ -17,5 +14,5 @@ export class AddOrderInput {
     totalAmount: number
 
     @Field(() => OrderStatus, {defaultValue: OrderStatus.PENDING})
-    status: OrderStatus
+    status?: OrderStatus
 }

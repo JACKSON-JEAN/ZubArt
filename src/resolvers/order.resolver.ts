@@ -10,8 +10,8 @@ export class OrderResolver {
     constructor(private orderService: OrderService) {}
 
     @Mutation(() => OrderModel)
-    async addOrder(@Args("addOrderInput") addOrderInput: AddOrderInput) {
-        return await this.orderService.addOrder(addOrderInput)
+    async addOrder(@Args("addOrderInput") addOrderInput: AddOrderInput, @Args("customerId") customerId: number) {
+        return await this.orderService.addOrder(addOrderInput, customerId)
     }
 
     @Query(() => [OrderModel])

@@ -3,6 +3,7 @@ import { UserModel } from "./user.model";
 import { OrderItem, OrderStatus } from "generated/prisma";
 import { OrderItemModel } from "./orderItem.model";
 import { AddressModel } from "./address.model";
+import { ArtworkModel } from "./artwork.model";
 
 registerEnumType(OrderStatus, {
     name: "OrderStatus"
@@ -20,11 +21,14 @@ export class OrderModel {
     shippingAddress?: AddressModel
 
     @Field(() => [OrderItemModel])
-    Items: OrderItem[]
+    items: OrderItem[]
 
     @Field(() => Float)
     totalAmount: number
 
     @Field(() => OrderStatus, {defaultValue: OrderStatus.PENDING})
     status: OrderStatus
+
+    @Field({ nullable: true }) 
+    paymentReference?: string
 }

@@ -100,13 +100,16 @@ type OrderModel {
   id: Int!
   customer: UserModel!
   shippingAddress: AddressModel
-  Items: [OrderItemModel!]!
+  items: [OrderItemModel!]!
   totalAmount: Float!
   status: OrderStatus!
+  paymentReference: String
 }
 
 enum OrderStatus {
   PENDING
+  FAILED
+  PAID
   PROCESSING
   SHIPPED
   DELIVERED
@@ -168,6 +171,72 @@ type Cart {
   totalAmount: Float!
 }
 
+type MessageModel {
+  id: Int!
+  fullName: String!
+  email: String!
+  message: String!
+  status: MessageStatus!
+  createdAt: DateTime!
+}
+
+enum MessageStatus {
+  Read
+  Unread
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type PaymentResponse {
+  orderTrackingId: String!
+  paymentRedirectUrl: String!
+}
+
+type PaymentStatusResponse {
+  status: String!
+  message: String!
+  payment_method: String!
+  amount: Float
+  currency: String
+}
+
+type WebhookResponse {
+  status: String!
+}
+
+type DPOPaymentResponse {
+  orderTrackingId: String!
+  paymentRedirectUrl: String!
+}
+
+type DPOCallbackResponse {
+  status: String!
+  message: String!
+}
+
+type PesapalPaymentResponse {
+  redirectUrl: String!
+}
+
+type PesapalPaymentStatusResponse {
+  status: String!
+}
+
+type PaymentModel {
+  id: Float!
+  order: OrderModel!
+  amount: Float!
+  currency: String!
+  paymentMethod: String!
+  paymentProvider: String
+  paymentReference: String!
+  status: String!
+  createdAt: DateTime!
+}
+
 type SubscriberModel {
   id: Float!
   email: String!
@@ -203,6 +272,13 @@ type Query {
   getCarts: [Cart!]!
   getClientCart(clientId: Float!): Cart
   getSubscribers: [SubscriberModel!]!
+  paymentStatus(orderTrackingId: String!): PaymentStatusResponse!
+  handleDpoCallback(TransactionToken: String!, Result: String!, ResultExplanation: String): DPOCallbackResponse!
+
+  """Verify a payment status from Pesapal"""
+  verifyPesapalPayment(orderTrackingId: String!): PesapalPaymentStatusResponse!
+  getClientPaymentReport(trackingId: String!): PaymentModel!
+  readMessages: [MessageModel!]!
 }
 
 input SearchArtworkInput {
@@ -231,11 +307,6 @@ input SearchOrdersInput {
   country: String
 }
 
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
 input SearchUsersInput {
   keyword: String
   role: Role
@@ -256,7 +327,7 @@ type Mutation {
   addOrderItem(addOrderItemInput: AddOrderItemInput!): OrderItemModel!
   updateOrderItem(orderItemId: Float!, updateOrderItemInput: UpdateOrderItemInput!): OrderItemModel!
   deleteOrderItem(orderItemId: Float!): String!
-  addOrder(addOrderInput: AddOrderInput!): OrderModel!
+  addOrder(addOrderInput: AddOrderInput!, customerId: Float!): OrderModel!
   updateOrder(orderId: Float!, updateOrderInput: UpdateOrderInput!): OrderModel!
   deleteOrder(orderId: Float!): String!
   addReviews(addReviewsInput: AddReviewsInput!): ReviewsModel!
@@ -276,6 +347,14 @@ type Mutation {
   cartItemDecrement(itemId: Float!, clientId: Float!): CartItem!
   deleteCartItem(itemId: Float!, clientId: Float!): String!
   addSubscriber(addSubscriberInput: AddSubscriberInput!): SubscriberModel!
+  initiatePayment(orderId: Float!): PaymentResponse!
+  handlePayPalWebhook(input: PayPalWebhookInput!): WebhookResponse!
+  capturePayment(orderTrackingId: String!): PaymentStatusResponse!
+  initiateDPOPayment(orderId: Float!): DPOPaymentResponse!
+
+  """Initiate a Pesapal payment and get redirect URL"""
+  initiatePesapalPayment(orderId: Float!): PesapalPaymentResponse!
+  sendMessage(messageInput: AddMessageInput!): MessageModel!
 }
 
 input AddArtworkInput {
@@ -360,7 +439,6 @@ input UpdateOrderItemInput {
 }
 
 input AddOrderInput {
-  customerId: Int!
   shippingAddressId: Int
   totalAmount: Float!
   status: OrderStatus! = PENDING
@@ -452,4 +530,16 @@ input AddCartItemInput {
 input AddSubscriberInput {
   email: String!
   status: SubscriberStatus! = ACTIVE
+}
+
+input PayPalWebhookInput {
+  body: String!
+  headers: String
+}
+
+input AddMessageInput {
+  fullName: String!
+  email: String!
+  message: String!
+  status: MessageStatus! = Unread
 }
