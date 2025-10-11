@@ -46,6 +46,7 @@ type ArtworkModel {
   description: String!
   material: String
   media: [ArtworkMediaModel!]!
+  imageHash: String
   yearCreated: Int
   category: Category!
   widthCm: Float
@@ -360,6 +361,7 @@ type Mutation {
 input AddArtworkInput {
   title: String!
   description: String!
+  imageHash: String
   material: String
   yearCreated: Int
   category: Category!
@@ -379,6 +381,7 @@ input UpdateArtworkInput {
   title: String
   description: String
   material: String
+  imageHash: String
   yearCreated: Int
   category: Category
   widthCm: Float

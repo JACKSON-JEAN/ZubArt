@@ -20,6 +20,7 @@ export class ArtworkService {
                     title: artworkinput.title,
                     description: artworkinput.description,
                     material: artworkinput.material || null,
+                    imageHash: artworkinput.imageHash || null,
                     yearCreated: artworkinput.yearCreated || null,
                     category: artworkinput.category,
                     widthCm: artworkinput.widthCm || null,

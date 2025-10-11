@@ -27,6 +27,9 @@ export class ArtworkModel {
     @Field(()=> [ArtworkMediaModel])
     media: ArtworkMediaModel[]
 
+    @Field(()=> String, {nullable: true})
+    imageHash?: string
+
     @Field(()=> Int, {nullable: true})
     yearCreated?: number
 

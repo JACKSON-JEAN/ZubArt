@@ -31,6 +31,7 @@ model Artwork{
   title String
   description String @db.Text
   media ArtworkMedia[]
+  imageHash String?
   yearCreated Int?
   category Category
   widthCm Float?

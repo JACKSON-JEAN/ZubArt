@@ -16,6 +16,9 @@ export class AddArtworkInput {
     description: string
 
     @Field(()=> String, {nullable: true})
+    imageHash?: string
+
+    @Field(()=> String, {nullable: true})
     material?: string
 
     @Field(()=> Int, {nullable: true})
