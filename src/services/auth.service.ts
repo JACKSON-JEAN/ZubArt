@@ -99,7 +99,7 @@ export class AuthService {
                 email: user.email,
                 role: user.role
             },
-            { expiresIn: process.env.JWT_EXPIRY_DATE || '15m' }
+            { expiresIn: (process.env.JWT_EXPIRY_DATE ?? '15m') as any }
         );
 
         const refreshToken = uuid();
