@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
@@ -22,8 +27,14 @@ export class PesapalPaymentService {
   ) {
     this.baseUrl = this.configService.get<string>('PESAPAL_BASE_URL', '');
     this.apiKey = this.configService.get<string>('PESAPAL_CONSUMER_KEY', '');
-    this.apiSecret = this.configService.get<string>('PESAPAL_CONSUMER_SECRET', '');
-    this.notificationId = this.configService.get<string>('PESAPAL_NOTIFICATION_ID', '');
+    this.apiSecret = this.configService.get<string>(
+      'PESAPAL_CONSUMER_SECRET',
+      '',
+    );
+    this.notificationId = this.configService.get<string>(
+      'PESAPAL_NOTIFICATION_ID',
+      '',
+    );
     this.appUrl = this.configService.get<string>('PESAPAL_APP_URL', '');
   }
 
@@ -40,12 +51,17 @@ export class PesapalPaymentService {
       );
 
       if (!response.data?.token) {
-        throw new BadRequestException('Authentication failed, no token received');
+        throw new BadRequestException(
+          'Authentication failed, no token received',
+        );
       }
 
       return response.data.token;
     } catch (error) {
-      this.logger.error('Pesapal authentication failed', error.response?.data || error.message);
+      this.logger.error(
+        'Pesapal authentication failed',
+        error.response?.data || error.message,
+      );
       throw new BadRequestException('Failed to authenticate with Pesapal');
     }
   }
@@ -82,7 +98,8 @@ export class PesapalPaymentService {
               phone_number: order.customer.phone || '000000000',
               first_name: order.customer.fullName.split(' ')[0],
               last_name:
-                order.customer.fullName.split(' ').slice(1).join(' ') || 'Customer',
+                order.customer.fullName.split(' ').slice(1).join(' ') ||
+                'Customer',
             },
           },
           {
@@ -95,7 +112,9 @@ export class PesapalPaymentService {
 
       if (!redirect_url || !order_tracking_id) {
         console.log('Pesapal response:', response.data);
-        throw new BadRequestException('Pesapal did not return redirect URL or tracking ID');
+        throw new BadRequestException(
+          'Pesapal did not return redirect URL or tracking ID',
+        );
       }
 
       await this.prisma.order.update({
@@ -109,7 +128,10 @@ export class PesapalPaymentService {
 
       return { redirectUrl: redirect_url };
     } catch (error) {
-      this.logger.error('Payment initiation failed', error.response?.data || error.message);
+      this.logger.error(
+        'Payment initiation failed',
+        error.response?.data || error.message,
+      );
       throw new BadRequestException('Failed to initiate payment');
     }
   }
@@ -146,7 +168,7 @@ export class PesapalPaymentService {
       const updatedOrder = await this.prisma.order.update({
         where: { paymentReference: orderTrackingId },
         data: { status: orderStatus },
-        include: { customer: true },
+        include: { customer: true, items: { include: { artwork: true } } },
       });
 
       // Only create Payment record if successful
@@ -163,30 +185,45 @@ export class PesapalPaymentService {
           },
         });
 
+        for (const item of updatedOrder.items) {
+          await this.prisma.artwork.update({
+            where: { id: item.artworkId },
+            data: {
+              reservedUntil: null,
+              isAvailable: false,
+            },
+          });
+        }
+
         // Send Email Notifications
         await this.sendPaymentEmails(updatedOrder, response.data);
       }
 
       return { status: orderStatus };
     } catch (error) {
-      this.logger.error('Payment verification failed', error.response?.data || error.message);
+      this.logger.error(
+        'Payment verification failed',
+        error.response?.data || error.message,
+      );
       throw new BadRequestException('Failed to verify payment');
     }
   }
 
   // Get payment report
-  async getClientPaymentReport(trackingId: string){
+  async getClientPaymentReport(trackingId: string) {
     const report = await this.prisma.payment.findUnique({
-      where: {paymentReference: trackingId},
+      where: { paymentReference: trackingId },
       include: {
-        order: {include: {items: {include: {artwork: true}}}}
-      }
-    })
+        order: { include: { items: { include: { artwork: true } } } },
+      },
+    });
 
-    if(!report){
-      throw new NotFoundException(`Payment for tracking ID ${trackingId} is not found!`)
+    if (!report) {
+      throw new NotFoundException(
+        `Payment for tracking ID ${trackingId} is not found!`,
+      );
     }
-    return report
+    return report;
   }
 
   /**
@@ -264,10 +301,8 @@ export class PesapalPaymentService {
 </table>
 `;
 
-
-
-    // HTML email for merchant
-    const merchantHtml = `
+      // HTML email for merchant
+      const merchantHtml = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <h2 style="color: #2c3e50;">New Payment Received</h2>
         <p>Order <strong>#${order.id}</strong> has been paid successfully.</p>
@@ -286,21 +321,23 @@ export class PesapalPaymentService {
     `;
 
       await transporter.sendMail({
-      from: `"Pearl Art Galleries" <${this.configService.get<string>('EMAIL_USER')}>`,
-      to: clientEmail,
-      subject: `Payment Successful - Order #${order.id}`,
-      html: clientHtml, 
-    });
+        from: `"Pearl Art Galleries" <${this.configService.get<string>('EMAIL_USER')}>`,
+        to: clientEmail,
+        subject: `Payment Successful - Order #${order.id}`,
+        html: clientHtml,
+      });
 
-    // Send to merchant
-    await transporter.sendMail({
-      from: `"Pearl Art Galleries" <${this.configService.get<string>('EMAIL_USER')}>`,
-      to: merchantEmail,
-      subject: `New Payment Received - Order #${order.id}`,
-      html: merchantHtml, // use html instead of text
-    });
+      // Send to merchant
+      await transporter.sendMail({
+        from: `"Pearl Art Galleries" <${this.configService.get<string>('EMAIL_USER')}>`,
+        to: merchantEmail,
+        subject: `New Payment Received - Order #${order.id}`,
+        html: merchantHtml, // use html instead of text
+      });
 
-      this.logger.log(`Payment emails sent to ${clientEmail} and ${merchantEmail}`);
+      this.logger.log(
+        `Payment emails sent to ${clientEmail} and ${merchantEmail}`,
+      );
     } catch (err) {
       this.logger.error('Failed to send payment emails', err.message);
     }

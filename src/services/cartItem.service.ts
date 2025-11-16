@@ -22,13 +22,13 @@ import {
         throw new BadRequestException('This artwork is no longer available');
       }
 
-      await this.prisma.artwork.update({
-        where: { id: artworkId },
-        data: { 
-          reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
-          isAvailable: false
-        }
-      });
+      // await this.prisma.artwork.update({
+      //   where: { id: artworkId },
+      //   data: { 
+      //     reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+      //     isAvailable: false
+      //   }
+      // });
   
       let cart = await this.prisma.cart.findFirst({
         where: { customerId: clientId },
@@ -147,13 +147,13 @@ import {
           where: { id: itemId },
         });
 
-        await this.prisma.artwork.update({
-          where: { id: cartItem.artworkId },
-          data: {
-            isAvailable: true,
-            reservedUntil: null
-          }
-        });
+        // await this.prisma.artwork.update({
+        //   where: { id: cartItem.artworkId },
+        //   data: {
+        //     isAvailable: true,
+        //     reservedUntil: null
+        //   }
+        // });
   
         const remainingItems = await this.prisma.cartItem.findMany({
           where: { cartId },
@@ -190,13 +190,13 @@ import {
           where: { id: itemId },
         });
 
-        await this.prisma.artwork.update({
-          where: { id: cartItem.artworkId },
-          data: {
-            isAvailable: true,
-            reservedUntil: null
-          }
-        });
+        // await this.prisma.artwork.update({
+        //   where: { id: cartItem.artworkId },
+        //   data: {
+        //     isAvailable: true,
+        //     reservedUntil: null
+        //   }
+        // });
   
         const remainingItems = await this.prisma.cartItem.findMany({
           where: { cartId },
