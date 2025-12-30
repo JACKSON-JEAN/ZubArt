@@ -7,48 +7,46 @@ import {
 import { PrismaService } from './prisma.service';
 import { AddMessageInput } from 'src/graphql/input/add_message.input';
 import { MessageStatus } from 'generated/prisma';
-import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MessagesService {
   private readonly logger = new Logger(MessagesService.name);
+  private readonly resend: Resend;
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+  }
 
   private async sendNotificationEmail(message: any) {
     try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: this.config.get<string>('EMAIL_USER'),
-          pass: this.config.get<string>('EMAIL_PASS'),
-        },
-      });
+      const adminEmail = this.config.get<string>('ADMIN_EMAIL');
+      const emailFrom = this.config.get<string>('EMAIL_FROM');
 
-      const adminEmail = this.config.get<string>('MERCHANT_EMAIL'); // set in your .env
-
-      const htmlContent = `
-            <h2>New Message Received</h2>
-            <p><strong>From:</strong> ${message.fullName} (${message.email})</p>
-            <p><strong>Message:</strong></p>
-            <p>${message.message}</p>
-            <p><strong>Status:</strong> ${message.status}</p>
-            <p>Received at: ${message.createdAt}</p>
-        `;
-
-      await transporter.sendMail({
-        from: `"Website Contact" <${this.config.get('EMAIL_USER')}>`,
-        to: adminEmail,
+      await this.resend.emails.send({
+        from: emailFrom!,
+        to: adminEmail!,
         subject: `New Message from ${message.fullName}`,
-        html: htmlContent,
+        html: `
+          <h2>New Message Received</h2>
+          <p><strong>From:</strong> ${message.fullName} (${message.email})</p>
+          <p><strong>Message:</strong></p>
+          <p>${message.message}</p>
+          <p><strong>Status:</strong> ${message.status}</p>
+          <p>Received at: ${new Date(message.createdAt).toLocaleString()}</p>
+        `,
       });
 
       this.logger.log(`Notification email sent for message ID ${message.id}`);
-    } catch (err) {
-      this.logger.error('Failed to send notification email', err);
+    } catch (error) {
+      this.logger.error(
+        'Failed to send notification email',
+        error?.message || error,
+      );
     }
   }
 
@@ -69,13 +67,17 @@ export class MessagesService {
         },
       });
 
+      // 🔔 Send admin email
       await this.sendNotificationEmail(sentMessage);
-      
+
       return sentMessage;
     } catch (error) {
-      this.logger.error('An error occured when sending message', error.message);
+      this.logger.error(
+        'An error occurred when sending message',
+        error.message,
+      );
       throw new InternalServerErrorException(
-        'An error occured when sending message',
+        'An error occurred when sending message',
       );
     }
   }
@@ -88,9 +90,12 @@ export class MessagesService {
         },
       });
     } catch (error) {
-      this.logger.error('An error occured when loading message', error.message);
+      this.logger.error(
+        'An error occurred when loading messages',
+        error.message,
+      );
       throw new InternalServerErrorException(
-        'An error occured when loading message',
+        'An error occurred when loading messages',
       );
     }
   }
