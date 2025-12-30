@@ -11,9 +11,10 @@ import { InventoryModule } from "./inventory.module";
 import { MessagesModule } from "./messages.module";
 import { OrderModule } from "./order.module";
 import { OrderItemModule } from "./order_item.module";
-import { PaymentModule } from "./Payment.module";
+// import { PaymentModule } from "./Payment.module";
 import { PrismaModule } from "./prisma.module";
 import { ReviewModule } from "./review.module";
+import { StripePaymentModule } from "./stripe.payment.module";
 import { SubscriberModule } from "./subscriber.module";
 import { UsersModule } from "./users.module";
 import { WishListModule } from "./wishList.module";
@@ -34,8 +35,9 @@ export const FeatureModule = [
     CartItemModule,
     CartModule,
     SubscriberModule,
-    PaymentModule,
+    // PaymentModule,
     InventoryModule,
     EmailModule,
-    MessagesModule
+    MessagesModule,
+    StripePaymentModule
 ]

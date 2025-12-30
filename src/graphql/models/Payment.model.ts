@@ -1,4 +1,3 @@
-// src/graphql/types/payment.type.ts
 import { Field, Float, ObjectType } from '@nestjs/graphql';
 
 @ObjectType()

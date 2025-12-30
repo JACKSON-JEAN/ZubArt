@@ -15,44 +15,44 @@ datasource db {
 }
 
 model Artisan {
-  id Int @id @default(autoincrement())
-  fullName String
-  country String
-  biography String @db.Text
-  artwork Artwork[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int       @id @default(autoincrement())
+  fullName  String
+  country   String
+  biography String    @db.Text
+  artwork   Artwork[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([fullName, country])
 }
 
-model Artwork{
-  id Int @id @default(autoincrement())
-  title String
-  description String @db.Text
-  media ArtworkMedia[]
-  imageHash String?
-  yearCreated Int?
-  category Category
-  widthCm Float?
-  heightCm Float?
-  weightKg Float?
-  material String?
-  isUnique Boolean @default(true)
-  isAvailable Boolean @default(true)
-  reservedUntil DateTime?
-  isFeatured Boolean @default(false)
+model Artwork {
+  id             Int            @id @default(autoincrement())
+  title          String
+  description    String         @db.Text
+  media          ArtworkMedia[]
+  imageHash      String?
+  yearCreated    Int?
+  category       Category
+  widthCm        Float?
+  heightCm       Float?
+  weightKg       Float?
+  material       String?
+  isUnique       Boolean        @default(true)
+  isAvailable    Boolean        @default(true)
+  reservedUntil  DateTime?
+  isFeatured     Boolean        @default(false)
   culturalOrigin String
-  artisanId Int?
-  artisan Artisan? @relation(fields: [artisanId], references: [id])
-  wishList WishList[]
-  cartItems CartItem[]
-  orderItems OrderItem[]
-  reviews Review[]
-  price Float
-  currency String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  artisanId      Int?
+  artisan        Artisan?       @relation(fields: [artisanId], references: [id])
+  wishList       WishList[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  reviews        Review[]
+  price          Float
+  currency       String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([title, isFeatured, isAvailable, price])
 }
@@ -65,21 +65,21 @@ enum Category {
   OTHER
 }
 
-model ArtworkMedia{
-  id        Int      @id @default(autoincrement())
-  url       String   @db.VarChar(2048) 
-  publicId  String   
+model ArtworkMedia {
+  id        Int       @id @default(autoincrement())
+  url       String    @db.VarChar(2048)
+  publicId  String
   type      MediaType
-  width     Int?     
-  height    Int?     
-  duration  Int?     
-  format    String?  
-  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  width     Int?
+  height    Int?
+  duration  Int?
+  format    String?
+  artwork   Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
   artworkId Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  @@index([artworkId]) 
+  @@index([artworkId])
 }
 
 enum MediaType {
@@ -87,85 +87,90 @@ enum MediaType {
   VIDEO
 }
 
-model WishList{
-  id Int @id @default(autoincrement())
+model WishList {
+  id         Int      @id @default(autoincrement())
   customerId Int
-  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  artworkId Int
-  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  customer   User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  artworkId  Int
+  artwork    Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([customerId, artworkId])
 }
 
 model CartItem {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   artworkId Int
-  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  cartId Int
-  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  quantity Int
-  price Float
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  cartId    Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  quantity  Int
+  price     Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Cart {
-  id Int @id @default(autoincrement())
-  customerId Int
-  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  items CartItem[]
+  id          Int        @id @default(autoincrement())
+  customerId  Int
+  customer    User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items       CartItem[]
   totalAmount Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([customerId])
 }
 
 model Payment {
-  id Int @id @default(autoincrement())
-  orderId Int
-  order Order @relation(fields: [orderId], references: [id])
-  amount Float
-  currency String @default("USD")
-  paymentMethod String
-  paymentProvider String?
-  paymentReference String @unique
-  status String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  orderId               Int
+  transactionId          String   @unique
+  order                 Order    @relation(fields: [orderId], references: [id])
+  amount                Float
+  currency              String   @default("USD")
+  paymentMethod         String
+  paymentProvider       String?
+  paymentReference      String   @unique
+  stripeSessionId       String?  @unique
+  stripePaymentIntentId String?  @unique
+  status                String
+  receiptUrl             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([orderId, paymentReference])
-
 }
 
-model OrderItem{
-  id Int @id @default(autoincrement())
+model OrderItem {
+  id        Int      @id @default(autoincrement())
   artworkId Int
-  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  quantity Int
-  price Float
-  orderId Int
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  quantity  Int
+  price     Float
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Order{
-  id Int @id @default(autoincrement())
-  customerId Int
-  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  shippingAddressId Int?
-  shippingAddress Address? @relation(fields: [shippingAddressId], references: [id])
-  items OrderItem[]
-  paymentReference String? @unique
-  paymentProvider  String?
-  payments Payment[]
-  totalAmount Float
-  status OrderStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Order {
+  id                    Int         @id @default(autoincrement())
+  customerId            Int
+  customer              User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shippingAddressId     Int?
+  shippingAddress       Address?    @relation(fields: [shippingAddressId], references: [id])
+  items                 OrderItem[]
+  paymentReference      String?     @unique
+  paymentProvider       String?
+  stripeSessionId       String?     @unique
+  stripePaymentIntentId String?     @unique
+  payments              Payment[]
+  totalAmount           Float
+  status                OrderStatus @default(PENDING)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   @@index([customerId, shippingAddressId, status])
 }
@@ -181,25 +186,25 @@ enum OrderStatus {
 }
 
 model Review {
-  id        Int      @id @default(autoincrement())
-  rating    Int      // e.g. 1–5
-  comment   String?
-  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
-  artworkId Int
-  customer  User? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  rating     Int // e.g. 1–5
+  comment    String?
+  artwork    Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  artworkId  Int
+  customer   User?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
   customerId Int?
   clientName String?
-  isActive Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
-model Subscriber{
-  id Int @id @default(autoincrement())
-  email String @unique
-  status SubscriberStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
+model Subscriber {
+  id        Int              @id @default(autoincrement())
+  email     String           @unique
+  status    SubscriberStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+  updateAt  DateTime         @updatedAt
 }
 
 enum SubscriberStatus {
@@ -211,40 +216,40 @@ model Address {
   id         Int      @id @default(autoincrement())
   fullName   String
   phone      String
-  email      String? 
+  email      String?
   line1      String
   line2      String?
   city       String
   state      String?
   country    String
   postalCode String?
-  isDefault Boolean @default(false)
-  userId Int?
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders      Order[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isDefault  Boolean  @default(false)
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders     Order[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([fullName, email, country, city])
 }
 
-
 model User {
-  id Int @id @default(autoincrement())
-  fullName String
-  email String @unique
-  phone String?
-  address Address[]
-  password String
-  role Role @default(CUSTOMER)
-  isActive Boolean @default(true)
-  wishList WishList[]
-  cart Cart[]
-  orders Order[]
-  reviews Review[]
+  id            Int            @id @default(autoincrement())
+  fullName      String
+  email         String         @unique
+  phone         String?
+  address       Address[]
+  password      String
+  role          Role           @default(CUSTOMER)
+  isActive      Boolean        @default(true)
+  wishList      WishList[]
+  cart          Cart[]
+  orders        Order[]
+  reviews       Review[]
   refreshTokens RefreshToken[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  passwordResetTokens PasswordResetToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([fullName, email, role])
 }
@@ -254,22 +259,33 @@ enum Role {
   ADMIN
 }
 
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+
 model RefreshToken {
   id         Int      @id @default(autoincrement())
   token      String
   expiryDate DateTime
-  userId  Int
+  userId     Int
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Message{
-  id Int @id @default(autoincrement())
-  fullName String
-  email String
-  message String @db.Text
-  status MessageStatus @default(Unread)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Message {
+  id        Int           @id @default(autoincrement())
+  fullName  String
+  email     String
+  message   String        @db.Text
+  status    MessageStatus @default(Unread)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 enum MessageStatus {

@@ -1,192 +1,312 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { PrismaService } from "./prisma.service";
-import { AddUserInput } from "../graphql/input/add_user.input";
-import * as bcrypt from "bcrypt";
-import { Role } from "generated/prisma";
-import { SigInInput } from "../graphql/input/signIn.input";
-import { JwtService } from "@nestjs/jwt";
-import { v4 as uuid } from "uuid";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+import { AddUserInput } from '../graphql/input/add_user.input';
+import * as bcrypt from 'bcrypt';
+import { Role } from 'generated/prisma';
+import { SigInInput } from '../graphql/input/signIn.input';
+import { JwtService } from '@nestjs/jwt';
+import { v4 as uuid } from 'uuid';
+
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
-    constructor(
-        private prismaService: PrismaService,
-        private jwtService: JwtService
-    ) {}
+  constructor(
+    private prismaService: PrismaService,
+    private jwtService: JwtService,
+    private config: ConfigService,
+  ) {}
 
-    async signUp(addUserInput: AddUserInput) {
-        const { fullName, email, password } = addUserInput;
-        if (!fullName || !email || !password) {
-            throw new BadRequestException("Please enter all required fields");
-        }
-
-        const existingUser = await this.prismaService.user.findUnique({ 
-            where: { email } 
-        });
-        if (existingUser) {
-            throw new ConflictException("User already exists");
-        }
-
-        try {
-            const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
-            
-            const newUser = await this.prismaService.user.create({
-                data: {
-                    fullName,
-                    email,
-                    phone: addUserInput.phone || null,
-                    password: hashedPassword,
-                    role: addUserInput.role || Role.CUSTOMER,
-                    isActive: true
-                }
-            });
-
-            const { password: _, ...result } = newUser;
-            return result;
-        } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException("Failed to create user");
-        }
+  async signUp(addUserInput: AddUserInput) {
+    const { fullName, email, password } = addUserInput;
+    if (!fullName || !email || !password) {
+      throw new BadRequestException('Please enter all required fields');
     }
 
-    async signIn(signInInput: SigInInput) {
-        const { email, password } = signInInput;
-        if (!email || !password) {
-            throw new BadRequestException("Email and password are required");
-        }
-
-        const user = await this.prismaService.user.findUnique({ 
-            where: { email } 
-        });
-        
-        if (!user || !user.isActive || !(await bcrypt.compare(password, user.password))) {
-            throw new UnauthorizedException("Invalid credentials");
-        }
-
-        try {
-            await this.prismaService.refreshToken.deleteMany({
-                where: { userId: user.id }
-            });
-
-            const tokens = await this.generateTokens({
-                id: user.id,
-                name: user.fullName,
-                email: user.email,
-                role: user.role
-            });
-
-            return {
-                ...tokens,
-                user: {
-                    id: user.id,
-                    fullName: user.fullName,
-                    email: user.email,
-                    role: user.role
-                }
-            };
-        } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException("Login failed");
-        }
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new ConflictException('User already exists');
     }
 
-    async generateTokens(user: { id: number; name: string; email: string; role: string }) {
-        const accessToken = this.jwtService.sign(
-            {
-                sub: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            },
-            { expiresIn: (process.env.JWT_EXPIRY_DATE ?? '15m') as any }
-        );
+    try {
+      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        const refreshToken = uuid();
+      const newUser = await this.prismaService.user.create({
+        data: {
+          fullName,
+          email,
+          phone: addUserInput.phone || null,
+          password: hashedPassword,
+          role: addUserInput.role || Role.CUSTOMER,
+          isActive: true,
+        },
+      });
 
-        await this.storeRefreshToken(refreshToken, user.id);
+      const { password: _, ...result } = newUser;
+      return result;
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Failed to create user');
+    }
+  }
 
-        return {
-            accessToken,
-            refreshToken
-        };
+  async signIn(signInInput: SigInInput) {
+    const { email, password } = signInInput;
+    if (!email || !password) {
+      throw new BadRequestException('Email and password are required');
     }
 
-    async storeRefreshToken(token: string, userId: number) {
-        const expiryDate = new Date();
-        expiryDate.setDate(
-            expiryDate.getDate() + 
-            parseInt(process.env.REFRESH_TOKEN_EXPIRY_DAYS || "3", 10)
-        );
+    const user = await this.prismaService.user.findUnique({
+      where: { email },
+    });
 
-        try {
-            return await this.prismaService.refreshToken.create({
-                data: {
-                    token,
-                    userId,
-                    expiryDate
-                }
-            });
-        } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException("Failed to store refresh token");
-        }
+    if (
+      !user ||
+      !user.isActive ||
+      !(await bcrypt.compare(password, user.password))
+    ) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    async refreshTokens(refreshToken: string) {
-        const tokenRecord = await this.prismaService.refreshToken.findFirst({
-            where: { 
-                token: refreshToken,
-                expiryDate: { gte: new Date() }
-            }
-        });
+    try {
+      await this.prismaService.refreshToken.deleteMany({
+        where: { userId: user.id },
+      });
 
-        if (!tokenRecord) {
-            throw new UnauthorizedException("Invalid refresh token");
-        }
+      const tokens = await this.generateTokens({
+        id: user.id,
+        name: user.fullName,
+        email: user.email,
+        role: user.role,
+      });
 
-        try {
-            await this.prismaService.refreshToken.delete({
-                where: { id: tokenRecord.id }
-            });
+      return {
+        ...tokens,
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Login failed');
+    }
+  }
 
-            const user = await this.prismaService.user.findUnique({
-                where: { id: tokenRecord.userId }
-            });
+  async generateTokens(user: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  }) {
+    const accessToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      { expiresIn: (process.env.JWT_EXPIRY_DATE ?? '15m') as any },
+    );
 
-            if (!user) {
-                throw new UnauthorizedException("User not found");
-            }
+    const refreshToken = uuid();
 
-            return await this.generateTokens({
-                id: user.id,
-                name: user.fullName,
-                email: user.email,
-                role: user.role
-            });
-        } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException("Failed to refresh tokens");
-        }
+    await this.storeRefreshToken(refreshToken, user.id);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async storeRefreshToken(token: string, userId: number) {
+    const expiryDate = new Date();
+    expiryDate.setDate(
+      expiryDate.getDate() +
+        parseInt(process.env.REFRESH_TOKEN_EXPIRY_DAYS || '3', 10),
+    );
+
+    try {
+      return await this.prismaService.refreshToken.create({
+        data: {
+          token,
+          userId,
+          expiryDate,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Failed to store refresh token');
+    }
+  }
+
+  async refreshTokens(refreshToken: string) {
+    const tokenRecord = await this.prismaService.refreshToken.findFirst({
+      where: {
+        token: refreshToken,
+        expiryDate: { gte: new Date() },
+      },
+    });
+
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
-    async logout(refreshToken: string) {
-        const tokenRecord = await this.prismaService.refreshToken.findFirst({
-            where: { token: refreshToken }
-        });
+    try {
+      await this.prismaService.refreshToken.delete({
+        where: { id: tokenRecord.id },
+      });
 
-        if (!tokenRecord) {
-            throw new NotFoundException("Refresh token not found");
-        }
+      const user = await this.prismaService.user.findUnique({
+        where: { id: tokenRecord.userId },
+      });
 
-        try {
-            await this.prismaService.refreshToken.delete({ 
-                where: { id: tokenRecord.id } 
-            });
-            return { success: true };
-        } catch (error) {
-            console.error(error);
-            throw new InternalServerErrorException("Logout failed");
-        }
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return await this.generateTokens({
+        id: user.id,
+        name: user.fullName,
+        email: user.email,
+        role: user.role,
+      });
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Failed to refresh tokens');
     }
+  }
+
+  async logout(refreshToken: string) {
+    const tokenRecord = await this.prismaService.refreshToken.findFirst({
+      where: { token: refreshToken },
+    });
+
+    if (!tokenRecord) {
+      throw new NotFoundException('Refresh token not found');
+    }
+
+    try {
+      await this.prismaService.refreshToken.delete({
+        where: { id: tokenRecord.id },
+      });
+      return { success: true };
+    } catch (error) {
+      console.error(error);
+      throw new InternalServerErrorException('Logout failed');
+    }
+  }
+
+  private async sendResetPasswordEmail(
+  email: string,
+  fullName: string,
+  resetLink: string,
+) {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: this.config.get<string>('EMAIL_USER'),
+      pass: this.config.get<string>('EMAIL_PASS'),
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+    to: email,
+    subject: 'Reset Your Password',
+    html: `
+      <p>Hello <b>${fullName}</b>,</p>
+      <p>Click the link below to reset your password:</p>
+      <p><a href="${resetLink}">Reset Password</a></p>
+      <p>This link expires in 15 minutes.</p>
+    `,
+  });
+}
+
+async forgotPassword(email: string) {
+  if (!email) {
+    throw new BadRequestException('Email is required');
+  }
+
+  const user = await this.prismaService.user.findUnique({
+    where: { email },
+  });
+
+  // Prevent user enumeration
+  if (!user) {
+    return 'If the email exists, a reset link has been sent';
+  }
+
+  await this.prismaService.passwordResetToken.deleteMany({
+    where: { userId: user.id },
+  });
+
+  const token = uuid();
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+  await this.prismaService.passwordResetToken.create({
+    data: {
+      token,
+      userId: user.id,
+      expiresAt,
+    },
+  });
+
+  const resetLink = `${this.config.get(
+    'FRONT_URL',
+  )}/reset-password?token=${token}`;
+
+  await this.sendResetPasswordEmail(
+    user.email,
+    user.fullName,
+    resetLink,
+  );
+
+  return 'If the email exists, a reset link has been sent';
+}
+
+async resetPassword(token: string, newPassword: string) {
+  const resetToken =
+    await this.prismaService.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+  if (!resetToken || resetToken.expiresAt < new Date()) {
+    throw new BadRequestException('Invalid or expired token');
+  }
+
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
+  );
+
+  await this.prismaService.user.update({
+    where: { id: resetToken.userId },
+    data: { password: hashedPassword },
+  });
+
+  await this.prismaService.passwordResetToken.delete({
+    where: { id: resetToken.id },
+  });
+
+  return 'Password reset successful';
+}
+
+
+
+
 }

@@ -28,6 +28,9 @@ export class PaymentModel {
   currency: string;
 
   @Field(() => String)
+  transactionId: string;
+
+  @Field(() => String)
   paymentMethod: string;
 
   @Field(() => String, {nullable: true})

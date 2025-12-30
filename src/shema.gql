@@ -191,39 +191,9 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
-type PaymentResponse {
-  orderTrackingId: String!
-  paymentRedirectUrl: String!
-}
-
-type PaymentStatusResponse {
-  status: String!
-  message: String!
-  payment_method: String!
-  amount: Float
-  currency: String
-}
-
-type WebhookResponse {
-  status: String!
-}
-
-type DPOPaymentResponse {
-  orderTrackingId: String!
-  paymentRedirectUrl: String!
-}
-
-type DPOCallbackResponse {
-  status: String!
-  message: String!
-}
-
-type PesapalPaymentResponse {
-  redirectUrl: String!
-}
-
-type PesapalPaymentStatusResponse {
-  status: String!
+type StripeCheckoutResponse {
+  sessionUrl: String!
+  sessionId: String!
 }
 
 type PaymentModel {
@@ -231,6 +201,7 @@ type PaymentModel {
   order: OrderModel!
   amount: Float!
   currency: String!
+  transactionId: String!
   paymentMethod: String!
   paymentProvider: String
   paymentReference: String!
@@ -273,13 +244,9 @@ type Query {
   getCarts: [Cart!]!
   getClientCart(clientId: Float!): Cart
   getSubscribers: [SubscriberModel!]!
-  paymentStatus(orderTrackingId: String!): PaymentStatusResponse!
-  handleDpoCallback(TransactionToken: String!, Result: String!, ResultExplanation: String): DPOCallbackResponse!
-
-  """Verify a payment status from Pesapal"""
-  verifyPesapalPayment(orderTrackingId: String!): PesapalPaymentStatusResponse!
-  getClientPaymentReport(trackingId: String!): PaymentModel!
   readMessages: [MessageModel!]!
+  getPaymentReport(sessionId: String!): String!
+  getClientPaymentReport(trackingId: String!): PaymentModel!
 }
 
 input SearchArtworkInput {
@@ -341,6 +308,8 @@ type Mutation {
   signIn(signInData: SigInInput!): AuthResponse!
   refreshTokens(refreshToken: String!): AuthRefreshResponse!
   logout(refreshToken: String!): LogoutResponse!
+  forgotPassword(email: String!): String!
+  resetPassword(resetPasswordInput: ResetPasswordInput!): String!
   updateUser(userId: Float!, updateInput: UpdateUserInput!): UserModel!
   deleteUser(userId: Float!): String!
   addCartItem(addItemInput: AddCartItemInput!, clientId: Float!): CartItem!
@@ -348,14 +317,10 @@ type Mutation {
   cartItemDecrement(itemId: Float!, clientId: Float!): CartItem!
   deleteCartItem(itemId: Float!, clientId: Float!): String!
   addSubscriber(addSubscriberInput: AddSubscriberInput!): SubscriberModel!
-  initiatePayment(orderId: Float!): PaymentResponse!
-  handlePayPalWebhook(input: PayPalWebhookInput!): WebhookResponse!
-  capturePayment(orderTrackingId: String!): PaymentStatusResponse!
-  initiateDPOPayment(orderId: Float!): DPOPaymentResponse!
-
-  """Initiate a Pesapal payment and get redirect URL"""
-  initiatePesapalPayment(orderId: Float!): PesapalPaymentResponse!
   sendMessage(messageInput: AddMessageInput!): MessageModel!
+
+  """Create a Stripe checkout session and return redirect URL"""
+  createStripeCheckoutSession(orderId: Float!): StripeCheckoutResponse!
 }
 
 input AddArtworkInput {
@@ -514,6 +479,11 @@ input SigInInput {
   password: String!
 }
 
+input ResetPasswordInput {
+  token: String!
+  newPassword: String!
+}
+
 input UpdateUserInput {
   fullName: String
   email: String
@@ -533,11 +503,6 @@ input AddCartItemInput {
 input AddSubscriberInput {
   email: String!
   status: SubscriberStatus! = ACTIVE
-}
-
-input PayPalWebhookInput {
-  body: String!
-  headers: String
 }
 
 input AddMessageInput {
