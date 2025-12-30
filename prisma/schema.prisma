@@ -126,7 +126,7 @@ model Cart {
 model Payment {
   id                    Int      @id @default(autoincrement())
   orderId               Int
-  transactionId          String   @unique
+  transactionId          String   @unique @default(uuid())
   order                 Order    @relation(fields: [orderId], references: [id])
   amount                Float
   currency              String   @default("USD")
