@@ -17,6 +17,7 @@ import { v4 as uuid } from 'uuid';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -215,17 +216,29 @@ export class AuthService {
   fullName: string,
   resetLink: string,
 ) {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    port: 465,
-    secure: true,
-    auth: {
-      user: this.config.get<string>('EMAIL_USER'),
-      pass: this.config.get<string>('EMAIL_PASS'),
-    },
-  });
+  // const transporter = nodemailer.createTransport({
+  //   service: 'smtp.gmail.com',
+  //   port: 465,
+  //   secure: true,
+  //   auth: {
+  //     user: this.config.get<string>('EMAIL_USER'),
+  //     pass: this.config.get<string>('EMAIL_PASS'),
+  //   },
+  // });
 
-  await transporter.sendMail({
+  const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: this.config.get('EMAIL_USER'),
+    pass: this.config.get('EMAIL_PASS'),
+  },
+});
+
+try {
+
+  const info = transporter.sendMail({
     from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
     to: email,
     subject: 'Reset Your Password',
@@ -236,6 +249,12 @@ export class AuthService {
       <p>This link expires in 15 minutes.</p>
     `,
   });
+  console.log('Email sent:', info.messageId);
+  
+} catch (error) {
+  console.error('Email error:', error);
+}
+
 }
 
 async forgotPassword(email: string) {
