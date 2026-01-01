@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from './prisma.service';
 import { OrderStatus } from 'generated/prisma';
 import * as nodemailer from 'nodemailer';
+import * as SibApiV3Sdk from '@sendinblue/client';
 import { v2 as cloudinary } from 'cloudinary';
 import { jsPDF } from 'jspdf';
 import * as dayjs from 'dayjs';
@@ -412,80 +413,178 @@ export class StripePaymentService {
   // -------------------------------
   // SEND EMAILS WITH PDF ATTACHMENT
   // -------------------------------
-  private async sendPaymentEmails(
-    order: any,
-    paymentData: any,
-    pdfBuffer: Buffer,
-  ) {
+//   private async sendPaymentEmails(
+//     order: any,
+//     paymentData: any,
+//     pdfBuffer: Buffer,
+//   ) {
+//     try {
+//       const transporter = nodemailer.createTransport({
+//         service: 'gmail',
+//         port: 465,
+//         secure: true,
+//         auth: {
+//           user: this.config.get<string>('EMAIL_USER'),
+//           pass: this.config.get<string>('EMAIL_PASS'),
+//         },
+//       });
+
+//       const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
+//       const clientEmail = order.customer.email;
+
+//       const itemsHtml = order.items
+//         .map(
+//           (item) =>
+//             `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`,
+//         )
+//         .join('');
+
+//       const clientHtml = `
+//         <p>Hello ${order.customer.fullName},</p>
+//         <p>Thank you for your purchase. Your payment has been successfully completed.</p>
+//         <p>Order #${order.id} — Total Paid: ${paymentData.currency} ${paymentData.amount}</p>
+//         <p>Attached is your official receipt.</p>
+//         <p>Items Purchased:</p>
+//         <ul>${itemsHtml}</ul>
+//         <p>Warm regards,<br/>Pearl Art Galleries</p>
+//       `;
+
+//       const merchantHtml = `
+//         <h2>New Payment Received</h2>
+//         <p>Order #${order.id} — Customer: ${order.customer.fullName} (${clientEmail})</p>
+//         <p>Payment Method: ${paymentData.paymentMethod} — Total: ${paymentData.currency} ${paymentData.amount}</p>
+//         <ul>${itemsHtml}</ul>
+//         <p>
+//   Receipt URL:
+//   <a href="${paymentData.receiptUrl}" target="_blank">
+//     View PDF
+//   </a>
+// </p>
+//       `;
+
+//       // Send to client with PDF attachment
+//       await transporter.sendMail({
+//         from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+//         to: clientEmail,
+//         subject: `Payment Successful - Order ${paymentData.transactionId}`,
+//         html: clientHtml,
+//         attachments: [
+//           {
+//             filename: `Receipt_${paymentData.transactionId}.pdf`,
+//             content: pdfBuffer,
+//           },
+//         ],
+//       });
+
+//       // Send to merchant
+//       await transporter.sendMail({
+//         from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+//         to: merchantEmail,
+//         subject: `New Payment Received - Order #${order.id}`,
+//         html: merchantHtml,
+//       });
+//     } catch (err) {
+//       this.logger.error('Failed to send payment emails', err);
+//     }
+//   }
+
+// -------------------------------
+// SEND EMAILS WITH PDF ATTACHMENT USING BREVO (Safe-Failed)
+// -------------------------------
+private async sendPaymentEmails(
+  order: any,
+  paymentData: any,
+  pdfBuffer: Buffer,
+) {
+  const logger = this.logger;
+  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  apiInstance.setApiKey(
+    SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+    this.config.get('BREVO_API_KEY')!,
+  );
+
+  const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
+  const clientEmail = order.customer.email;
+
+  const itemsHtml = order.items
+    .map(
+      (item) =>
+        `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`
+    )
+    .join('');
+
+  const clientHtml = `
+    <p>Hello ${order.customer.fullName},</p>
+    <p>Thank you for your purchase. Your payment has been successfully completed.</p>
+    <p>Order #${order.id} — Total Paid: ${paymentData.currency} ${paymentData.amount}</p>
+    <p>Attached is your official receipt.</p>
+    <p>Items Purchased:</p>
+    <ul>${itemsHtml}</ul>
+    <p>Warm regards,<br/>Pearl Art Galleries</p>
+  `;
+
+  const merchantHtml = `
+    <h2>New Payment Received</h2>
+    <p>Order #${order.id} — Customer: ${order.customer.fullName} (${clientEmail})</p>
+    <p>Payment Method: ${paymentData.paymentMethod} — Total: ${paymentData.currency} ${paymentData.amount}</p>
+    <ul>${itemsHtml}</ul>
+    <p>
+      Receipt URL:
+      <a href="${paymentData.receiptUrl}" target="_blank">View PDF</a>
+    </p>
+  `;
+
+  // Helper to send email safely
+  const safeSendEmail = async (to: string, name: string, subject: string, html: string, attachment?: Buffer) => {
     try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        port: 465,
-        secure: true,
-        auth: {
-          user: this.config.get<string>('EMAIL_USER'),
-          pass: this.config.get<string>('EMAIL_PASS'),
-        },
-      });
+      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+      sendSmtpEmail.sender = { name: 'Pearl Art Galleries', email: 'no-reply@pearlartgalleries.com' };
+      sendSmtpEmail.to = [{ email: to, name }];
+      sendSmtpEmail.subject = subject;
+      sendSmtpEmail.htmlContent = html;
 
-      const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
-      const clientEmail = order.customer.email;
-
-      const itemsHtml = order.items
-        .map(
-          (item) =>
-            `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`,
-        )
-        .join('');
-
-      const clientHtml = `
-        <p>Hello ${order.customer.fullName},</p>
-        <p>Thank you for your purchase. Your payment has been successfully completed.</p>
-        <p>Order #${order.id} — Total Paid: ${paymentData.currency} ${paymentData.amount}</p>
-        <p>Attached is your official receipt.</p>
-        <p>Items Purchased:</p>
-        <ul>${itemsHtml}</ul>
-        <p>Warm regards,<br/>Pearl Art Galleries</p>
-      `;
-
-      const merchantHtml = `
-        <h2>New Payment Received</h2>
-        <p>Order #${order.id} — Customer: ${order.customer.fullName} (${clientEmail})</p>
-        <p>Payment Method: ${paymentData.paymentMethod} — Total: ${paymentData.currency} ${paymentData.amount}</p>
-        <ul>${itemsHtml}</ul>
-        <p>
-  Receipt URL:
-  <a href="${paymentData.receiptUrl}" target="_blank">
-    View PDF
-  </a>
-</p>
-      `;
-
-      // Send to client with PDF attachment
-      await transporter.sendMail({
-        from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
-        to: clientEmail,
-        subject: `Payment Successful - Order ${paymentData.transactionId}`,
-        html: clientHtml,
-        attachments: [
+      if (attachment) {
+        sendSmtpEmail.attachment = [
           {
-            filename: `Receipt_${paymentData.transactionId}.pdf`,
-            content: pdfBuffer,
+            content: attachment.toString('base64'),
+            name: `Receipt_${paymentData.transactionId}.pdf`,
           },
-        ],
-      });
+        ];
+      }
 
-      // Send to merchant
-      await transporter.sendMail({
-        from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
-        to: merchantEmail,
-        subject: `New Payment Received - Order #${order.id}`,
-        html: merchantHtml,
-      });
-    } catch (err) {
-      this.logger.error('Failed to send payment emails', err);
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+      logger.log(`Email sent successfully to ${to}, messageId: ${response.body?.messageId}`);
+    } catch (error) {
+      logger.error(`Failed to send email to ${to}`, error?.response || error);
     }
+  };
+
+  // Send client email if email exists
+  if (clientEmail) {
+    await safeSendEmail(
+      clientEmail,
+      order.customer.fullName,
+      `Payment Successful - Order ${paymentData.transactionId}`,
+      clientHtml,
+      pdfBuffer,
+    );
+  } else {
+    logger.warn(`Client email missing for order ${order.id}, skipping email`);
   }
+
+  // Send merchant email if email exists
+  if (merchantEmail) {
+    await safeSendEmail(
+      merchantEmail,
+      'Merchant',
+      `New Payment Received - Order #${order.id}`,
+      merchantHtml,
+    );
+  } else {
+    logger.warn('MERCHANT_EMAIL not configured, skipping merchant notification');
+  }
+}
+
 
   async getClientPaymentReport(trackingId: string) {
     const report = await this.prisma.payment.findUnique({
