@@ -238,18 +238,20 @@ export class AuthService {
 
 try {
 
-  const info = transporter.sendMail({
-    from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
-    to: email,
-    subject: 'Reset Your Password',
-    html: `
-      <p>Hello <b>${fullName}</b>,</p>
-      <p>Click the link below to reset your password:</p>
-      <p><a href="${resetLink}">Reset Password</a></p>
-      <p>This link expires in 15 minutes.</p>
-    `,
-  });
-  console.log('Email sent:', info.messageId);
+  const info = await transporter.sendMail({
+  from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+  to: email,
+  subject: 'Reset Your Password',
+  html: `
+    <p>Hello <b>${fullName}</b>,</p>
+    <p>Click the link below to reset your password:</p>
+    <p><a href="${resetLink}">Reset Password</a></p>
+    <p>This link expires in 15 minutes.</p>
+  `,
+});
+
+console.log('Email sent:', info.messageId);
+
   
 } catch (error) {
   console.error('Email error:', error);
