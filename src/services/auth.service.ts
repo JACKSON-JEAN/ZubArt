@@ -14,7 +14,7 @@ import { SigInInput } from '../graphql/input/signIn.input';
 import { JwtService } from '@nestjs/jwt';
 import { v4 as uuid } from 'uuid';
 
-import * as nodemailer from 'nodemailer';
+import * as SibApiV3Sdk from '@sendinblue/client';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -210,41 +210,44 @@ export class AuthService {
     }
   }
 
-  private async sendResetPasswordEmail(
-    email: string,
-    fullName: string,
-    resetLink: string,
-  ) {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp-relay.brevo.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.BREVO_USER,
-        pass: process.env.BREVO_PASS,
-      },
-    });
+private async sendResetPasswordEmail(
+  email: string,
+  fullName: string,
+  resetLink: string,
+) {
+  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  apiInstance.setApiKey(
+    SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+    this.config.get('BREVO_API_KEY')!,
+  );
 
-    try {
-      const info = await transporter.sendMail({
-        from: `"Pearl Art Galleries" <no-reply@pearlartgalleries.com>`,
-        to: email,
-        subject: 'Reset Your Password',
-        html: `
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  sendSmtpEmail.to = [{ email, name: fullName }];
+  sendSmtpEmail.sender = {
+    name: 'Pearl Art Galleries',
+    email: 'no-reply@pearlartgalleries.com',
+  };
+  sendSmtpEmail.subject = 'Reset Your Password';
+  sendSmtpEmail.htmlContent = `
     <p>Hello <b>${fullName}</b>,</p>
     <p>Click the link below to reset your password:</p>
     <p><a href="${resetLink}">Reset Password</a></p>
     <p>This link expires in 15 minutes.</p>
-  `,
-      });
+  `;
 
-      console.log('Email sent:', info.messageId);
-    } catch (error) {
-      console.error('EMAIL FAILED ⛔', error?.response || error);
-      console.error('Full error object:', error);
-      throw error;
-    }
+  try {
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Email sent via Brevo API, messageId:', response.body?.messageId);
+  } catch (error) {
+    console.error('EMAIL FAILED ⛔', error?.response || error);
+    console.error('Full error object:', error);
+    throw new InternalServerErrorException('Failed to send email');
   }
+}
+
+
+
+  
 
   async forgotPassword(email: string) {
     if (!email) {
