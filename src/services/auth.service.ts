@@ -17,7 +17,6 @@ import { v4 as uuid } from 'uuid';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -212,116 +211,103 @@ export class AuthService {
   }
 
   private async sendResetPasswordEmail(
-  email: string,
-  fullName: string,
-  resetLink: string,
-) {
+    email: string,
+    fullName: string,
+    resetLink: string,
+  ) {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.BREVO_USER,
+        pass: process.env.BREVO_PASS,
+      },
+    });
 
-  const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER,
-    pass: process.env.BREVO_PASS,
-  },
-});
-
-try {
-
-  const info = await transporter.sendMail({
-  from: `"Pearl Art Galleries" <no-reply@pearlartgalleries.com>`,
-  to: email,
-  subject: 'Reset Your Password',
-  html: `
+    try {
+      const info = await transporter.sendMail({
+        from: `"Pearl Art Galleries" <no-reply@pearlartgalleries.com>`,
+        to: email,
+        subject: 'Reset Your Password',
+        html: `
     <p>Hello <b>${fullName}</b>,</p>
     <p>Click the link below to reset your password:</p>
     <p><a href="${resetLink}">Reset Password</a></p>
     <p>This link expires in 15 minutes.</p>
   `,
-});
+      });
 
-console.log('Email sent:', info.messageId);
-
-  
-} catch (error) {
-  console.error('EMAIL FAILED ⛔', error?.response || error);
-  throw error;
-}
-
-}
-
-async forgotPassword(email: string) {
-  if (!email) {
-    throw new BadRequestException('Email is required');
+      console.log('Email sent:', info.messageId);
+    } catch (error) {
+      console.error('EMAIL FAILED ⛔', error?.response || error);
+      console.error('Full error object:', error);
+      throw error;
+    }
   }
 
-  const user = await this.prismaService.user.findUnique({
-    where: { email },
-  });
+  async forgotPassword(email: string) {
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
 
-  // Prevent user enumeration
-  if (!user) {
+    const user = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+
+    // Prevent user enumeration
+    if (!user) {
+      return 'If the email exists, a reset link has been sent';
+    }
+
+    await this.prismaService.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    const token = uuid();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    await this.prismaService.passwordResetToken.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
+    const resetLink = `${this.config.get(
+      'FRONT_URL',
+    )}/reset-password?token=${token}`;
+
+    await this.sendResetPasswordEmail(user.email, user.fullName, resetLink);
+
     return 'If the email exists, a reset link has been sent';
   }
 
-  await this.prismaService.passwordResetToken.deleteMany({
-    where: { userId: user.id },
-  });
-
-  const token = uuid();
-  const expiresAt = new Date();
-  expiresAt.setMinutes(expiresAt.getMinutes() + 15);
-
-  await this.prismaService.passwordResetToken.create({
-    data: {
-      token,
-      userId: user.id,
-      expiresAt,
-    },
-  });
-
-  const resetLink = `${this.config.get(
-    'FRONT_URL',
-  )}/reset-password?token=${token}`;
-
-  await this.sendResetPasswordEmail(
-    user.email,
-    user.fullName,
-    resetLink,
-  );
-
-  return 'If the email exists, a reset link has been sent';
-}
-
-async resetPassword(token: string, newPassword: string) {
-  const resetToken =
-    await this.prismaService.passwordResetToken.findUnique({
+  async resetPassword(token: string, newPassword: string) {
+    const resetToken = await this.prismaService.passwordResetToken.findUnique({
       where: { token },
     });
 
-  if (!resetToken || resetToken.expiresAt < new Date()) {
-    throw new BadRequestException('Invalid or expired token');
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      newPassword,
+      parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
+    );
+
+    await this.prismaService.user.update({
+      where: { id: resetToken.userId },
+      data: { password: hashedPassword },
+    });
+
+    await this.prismaService.passwordResetToken.delete({
+      where: { id: resetToken.id },
+    });
+
+    return 'Password reset successful';
   }
-
-  const hashedPassword = await bcrypt.hash(
-    newPassword,
-    parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
-  );
-
-  await this.prismaService.user.update({
-    where: { id: resetToken.userId },
-    data: { password: hashedPassword },
-  });
-
-  await this.prismaService.passwordResetToken.delete({
-    where: { id: resetToken.id },
-  });
-
-  return 'Password reset successful';
-}
-
-
-
-
 }
