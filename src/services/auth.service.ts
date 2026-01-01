@@ -216,30 +216,21 @@ export class AuthService {
   fullName: string,
   resetLink: string,
 ) {
-  // const transporter = nodemailer.createTransport({
-  //   service: 'smtp.gmail.com',
-  //   port: 465,
-  //   secure: true,
-  //   auth: {
-  //     user: this.config.get<string>('EMAIL_USER'),
-  //     pass: this.config.get<string>('EMAIL_PASS'),
-  //   },
-  // });
 
   const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false,
   auth: {
-    user: this.config.get('EMAIL_USER'),
-    pass: this.config.get('EMAIL_PASS'),
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS,
   },
 });
 
 try {
 
   const info = await transporter.sendMail({
-  from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+  from: `"Pearl Art Galleries" <no-reply@pearlartgalleries.com>`,
   to: email,
   subject: 'Reset Your Password',
   html: `
@@ -254,7 +245,8 @@ console.log('Email sent:', info.messageId);
 
   
 } catch (error) {
-  console.error('Email error:', error);
+  console.error('EMAIL FAILED ⛔', error?.response || error);
+  throw error;
 }
 
 }
