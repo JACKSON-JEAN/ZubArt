@@ -260,7 +260,7 @@ export class StripePaymentService {
     doc.text('Email: pearlartgalleries@gmail.com', 105, 22, {
       align: 'center',
     });
-    doc.text('Phone: +256 776 286 452', 105, 27, { align: 'center' });
+    doc.text('Phone: +256 776 286 453', 105, 27, { align: 'center' });
 
     doc.line(15, 35, 195, 35);
 
@@ -367,6 +367,68 @@ export class StripePaymentService {
     doc.setFont('helvetica', 'normal');
 
     const pageHeight = doc.internal.pageSize.getHeight();
+    if (y > pageHeight - 90) {
+      doc.addPage();
+      y = 20;
+    }
+
+    // -------------------------------
+    // SHIPPING & FRAMING NOTES
+    // -------------------------------
+    y += 12;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Shipping Information', startX, y);
+
+    doc.setFont('helvetica', 'normal');
+    y += 6;
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+
+    doc.text(
+      'Thank you for your order! Your artwork will be securely packaged in a protective poster tube\n' +
+        'and shipped within 72 hours via DHL. Once shipped, tracking information will be shared.',
+      startX,
+      y,
+    );
+
+    y += 14;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    doc.text('Framing Suggestion', startX, y);
+
+    doc.setFont('helvetica', 'normal');
+    y += 6;
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+
+    doc.text(
+      'We recommend using a quality frame with acid-free backing. This helps keep your artwork\n' +
+        'flat and stable over time, preventing warping or bending—especially for larger pieces\n' +
+        'or artwork on thinner paper.',
+      startX,
+      y,
+    );
+
+    y += 16;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    doc.text('Need Help?', startX, y);
+
+    doc.setFont('helvetica', 'normal');
+    y += 6;
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    doc.text(
+      'Email: pearlartgalleries@gmail.com\nCall us on WhatsApp: +256 776 286 453',
+      startX,
+      y,
+    );
+
+    doc.setTextColor(0);
+
+    //Footer
+
     const footerY = pageHeight - 20;
 
     doc.setFontSize(9);
@@ -413,107 +475,107 @@ export class StripePaymentService {
   // -------------------------------
   // SEND EMAILS WITH PDF ATTACHMENT
   // -------------------------------
-//   private async sendPaymentEmails(
-//     order: any,
-//     paymentData: any,
-//     pdfBuffer: Buffer,
-//   ) {
-//     try {
-//       const transporter = nodemailer.createTransport({
-//         service: 'gmail',
-//         port: 465,
-//         secure: true,
-//         auth: {
-//           user: this.config.get<string>('EMAIL_USER'),
-//           pass: this.config.get<string>('EMAIL_PASS'),
-//         },
-//       });
+  //   private async sendPaymentEmails(
+  //     order: any,
+  //     paymentData: any,
+  //     pdfBuffer: Buffer,
+  //   ) {
+  //     try {
+  //       const transporter = nodemailer.createTransport({
+  //         service: 'gmail',
+  //         port: 465,
+  //         secure: true,
+  //         auth: {
+  //           user: this.config.get<string>('EMAIL_USER'),
+  //           pass: this.config.get<string>('EMAIL_PASS'),
+  //         },
+  //       });
 
-//       const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
-//       const clientEmail = order.customer.email;
+  //       const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
+  //       const clientEmail = order.customer.email;
 
-//       const itemsHtml = order.items
-//         .map(
-//           (item) =>
-//             `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`,
-//         )
-//         .join('');
+  //       const itemsHtml = order.items
+  //         .map(
+  //           (item) =>
+  //             `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`,
+  //         )
+  //         .join('');
 
-//       const clientHtml = `
-//         <p>Hello ${order.customer.fullName},</p>
-//         <p>Thank you for your purchase. Your payment has been successfully completed.</p>
-//         <p>Order #${order.id} — Total Paid: ${paymentData.currency} ${paymentData.amount}</p>
-//         <p>Attached is your official receipt.</p>
-//         <p>Items Purchased:</p>
-//         <ul>${itemsHtml}</ul>
-//         <p>Warm regards,<br/>Pearl Art Galleries</p>
-//       `;
+  //       const clientHtml = `
+  //         <p>Hello ${order.customer.fullName},</p>
+  //         <p>Thank you for your purchase. Your payment has been successfully completed.</p>
+  //         <p>Order #${order.id} — Total Paid: ${paymentData.currency} ${paymentData.amount}</p>
+  //         <p>Attached is your official receipt.</p>
+  //         <p>Items Purchased:</p>
+  //         <ul>${itemsHtml}</ul>
+  //         <p>Warm regards,<br/>Pearl Art Galleries</p>
+  //       `;
 
-//       const merchantHtml = `
-//         <h2>New Payment Received</h2>
-//         <p>Order #${order.id} — Customer: ${order.customer.fullName} (${clientEmail})</p>
-//         <p>Payment Method: ${paymentData.paymentMethod} — Total: ${paymentData.currency} ${paymentData.amount}</p>
-//         <ul>${itemsHtml}</ul>
-//         <p>
-//   Receipt URL:
-//   <a href="${paymentData.receiptUrl}" target="_blank">
-//     View PDF
-//   </a>
-// </p>
-//       `;
+  //       const merchantHtml = `
+  //         <h2>New Payment Received</h2>
+  //         <p>Order #${order.id} — Customer: ${order.customer.fullName} (${clientEmail})</p>
+  //         <p>Payment Method: ${paymentData.paymentMethod} — Total: ${paymentData.currency} ${paymentData.amount}</p>
+  //         <ul>${itemsHtml}</ul>
+  //         <p>
+  //   Receipt URL:
+  //   <a href="${paymentData.receiptUrl}" target="_blank">
+  //     View PDF
+  //   </a>
+  // </p>
+  //       `;
 
-//       // Send to client with PDF attachment
-//       await transporter.sendMail({
-//         from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
-//         to: clientEmail,
-//         subject: `Payment Successful - Order ${paymentData.transactionId}`,
-//         html: clientHtml,
-//         attachments: [
-//           {
-//             filename: `Receipt_${paymentData.transactionId}.pdf`,
-//             content: pdfBuffer,
-//           },
-//         ],
-//       });
+  //       // Send to client with PDF attachment
+  //       await transporter.sendMail({
+  //         from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+  //         to: clientEmail,
+  //         subject: `Payment Successful - Order ${paymentData.transactionId}`,
+  //         html: clientHtml,
+  //         attachments: [
+  //           {
+  //             filename: `Receipt_${paymentData.transactionId}.pdf`,
+  //             content: pdfBuffer,
+  //           },
+  //         ],
+  //       });
 
-//       // Send to merchant
-//       await transporter.sendMail({
-//         from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
-//         to: merchantEmail,
-//         subject: `New Payment Received - Order #${order.id}`,
-//         html: merchantHtml,
-//       });
-//     } catch (err) {
-//       this.logger.error('Failed to send payment emails', err);
-//     }
-//   }
+  //       // Send to merchant
+  //       await transporter.sendMail({
+  //         from: `"Pearl Art Galleries" <${this.config.get('EMAIL_USER')}>`,
+  //         to: merchantEmail,
+  //         subject: `New Payment Received - Order #${order.id}`,
+  //         html: merchantHtml,
+  //       });
+  //     } catch (err) {
+  //       this.logger.error('Failed to send payment emails', err);
+  //     }
+  //   }
 
-// -------------------------------
-// SEND EMAILS WITH PDF ATTACHMENT USING BREVO (Safe-Failed)
-// -------------------------------
-private async sendPaymentEmails(
-  order: any,
-  paymentData: any,
-  pdfBuffer: Buffer,
-) {
-  const logger = this.logger;
-  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-  apiInstance.setApiKey(
-    SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
-    this.config.get('BREVO_API_KEY')!,
-  );
+  // -------------------------------
+  // SEND EMAILS WITH PDF ATTACHMENT USING BREVO (Safe-Failed)
+  // -------------------------------
+  private async sendPaymentEmails(
+    order: any,
+    paymentData: any,
+    pdfBuffer: Buffer,
+  ) {
+    const logger = this.logger;
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    apiInstance.setApiKey(
+      SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
+      this.config.get('BREVO_API_KEY')!,
+    );
 
-  const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
-  const clientEmail = order.customer.email;
+    const merchantEmail = this.config.get<string>('MERCHANT_EMAIL');
+    const clientEmail = order.customer.email;
 
-  const itemsHtml = order.items
-    .map(
-      (item) =>
-        `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`
-    )
-    .join('');
+    const itemsHtml = order.items
+      .map(
+        (item) =>
+          `<li><strong>${item.artwork.title}</strong> — Qty ${item.quantity} — ${paymentData.currency} ${(item.price * item.quantity).toFixed(2)}</li>`,
+      )
+      .join('');
 
-  const clientHtml = `
+    const clientHtml = `
     <p>Hello ${order.customer.fullName},</p>
     <p>Thank you for your purchase. Your payment has been successfully completed.</p>
     <p>Order #${order.id} — Total Paid: ${paymentData.currency} ${paymentData.amount}</p>
@@ -523,7 +585,7 @@ private async sendPaymentEmails(
     <p>Warm regards,<br/>Pearl Art Galleries</p>
   `;
 
-  const merchantHtml = `
+    const merchantHtml = `
     <h2>New Payment Received</h2>
     <p>Order #${order.id} — Customer: ${order.customer.fullName} (${clientEmail})</p>
     <p>Payment Method: ${paymentData.paymentMethod} — Total: ${paymentData.currency} ${paymentData.amount}</p>
@@ -534,57 +596,69 @@ private async sendPaymentEmails(
     </p>
   `;
 
-  // Helper to send email safely
-  const safeSendEmail = async (to: string, name: string, subject: string, html: string, attachment?: Buffer) => {
-    try {
-      const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-      sendSmtpEmail.sender = { name: 'Pearl Art Galleries', email: 'no-reply@pearlartgalleries.com' };
-      sendSmtpEmail.to = [{ email: to, name }];
-      sendSmtpEmail.subject = subject;
-      sendSmtpEmail.htmlContent = html;
+    // Helper to send email safely
+    const safeSendEmail = async (
+      to: string,
+      name: string,
+      subject: string,
+      html: string,
+      attachment?: Buffer,
+    ) => {
+      try {
+        const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+        sendSmtpEmail.sender = {
+          name: 'Pearl Art Galleries',
+          email: 'no-reply@pearlartgalleries.com',
+        };
+        sendSmtpEmail.to = [{ email: to, name }];
+        sendSmtpEmail.subject = subject;
+        sendSmtpEmail.htmlContent = html;
 
-      if (attachment) {
-        sendSmtpEmail.attachment = [
-          {
-            content: attachment.toString('base64'),
-            name: `Receipt_${paymentData.transactionId}.pdf`,
-          },
-        ];
+        if (attachment) {
+          sendSmtpEmail.attachment = [
+            {
+              content: attachment.toString('base64'),
+              name: `Receipt_${paymentData.transactionId}.pdf`,
+            },
+          ];
+        }
+
+        const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+        logger.log(
+          `Email sent successfully to ${to}, messageId: ${response.body?.messageId}`,
+        );
+      } catch (error) {
+        logger.error(`Failed to send email to ${to}`, error?.response || error);
       }
+    };
 
-      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-      logger.log(`Email sent successfully to ${to}, messageId: ${response.body?.messageId}`);
-    } catch (error) {
-      logger.error(`Failed to send email to ${to}`, error?.response || error);
+    // Send client email if email exists
+    if (clientEmail) {
+      await safeSendEmail(
+        clientEmail,
+        order.customer.fullName,
+        `Payment Successful - Order ${paymentData.transactionId}`,
+        clientHtml,
+        pdfBuffer,
+      );
+    } else {
+      logger.warn(`Client email missing for order ${order.id}, skipping email`);
     }
-  };
 
-  // Send client email if email exists
-  if (clientEmail) {
-    await safeSendEmail(
-      clientEmail,
-      order.customer.fullName,
-      `Payment Successful - Order ${paymentData.transactionId}`,
-      clientHtml,
-      pdfBuffer,
-    );
-  } else {
-    logger.warn(`Client email missing for order ${order.id}, skipping email`);
+    // Send merchant email if email exists
+    if (merchantEmail) {
+      await safeSendEmail(
+        merchantEmail,
+        'Merchant',
+        `New Payment Received - Order #${order.id}`,
+        merchantHtml,
+      );
+    } else {
+      logger.warn(
+        'MERCHANT_EMAIL not configured, skipping merchant notification',
+      );
+    }
   }
-
-  // Send merchant email if email exists
-  if (merchantEmail) {
-    await safeSendEmail(
-      merchantEmail,
-      'Merchant',
-      `New Payment Received - Order #${order.id}`,
-      merchantHtml,
-    );
-  } else {
-    logger.warn('MERCHANT_EMAIL not configured, skipping merchant notification');
-  }
-}
-
 
   async getClientPaymentReport(trackingId: string) {
     const report = await this.prisma.payment.findUnique({
