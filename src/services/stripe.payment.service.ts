@@ -365,67 +365,63 @@ export class StripePaymentService {
       align: 'right',
     });
     doc.setFont('helvetica', 'normal');
+    y += 15;
 
     const pageHeight = doc.internal.pageSize.getHeight();
+    const contentWidth = 180; // text width for wrapping
+    const lineHeight = 5; // vertical space per line
+    const sectionGap = 1; // consistent gap between sections
+
+    // Add new page if necessary
     if (y > pageHeight - 90) {
       doc.addPage();
       y = 20;
     }
 
     // -------------------------------
-    // SHIPPING & FRAMING NOTES
+    // SHIPPING INFORMATION
     // -------------------------------
-    y += 12;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Shipping Information', startX, y);
 
     doc.setFont('helvetica', 'normal');
-    y += 6;
     doc.setFontSize(10);
     doc.setTextColor(60);
+    y += 4;
 
-    doc.text(
-      'Thank you for your order! Your artwork will be securely packaged in a protective poster tube\n' +
-        'and shipped within 72 hours via DHL. Once shipped, tracking information will be shared.',
-      startX,
-      y,
-    );
+    const shippingText =
+      'Thanks for your order!\nWe will ship your art in a secure poster tube within 72 hours via DHL. After your order has shipped we will forward you the tracking information.';
+    const shippingLines = doc.splitTextToSize(shippingText, contentWidth);
+    doc.text(shippingLines, startX, y);
+    y += shippingLines.length * lineHeight + sectionGap;
 
-    y += 14;
+    // -------------------------------
+    // FRAMING SUGGESTION
+    // -------------------------------
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0);
     doc.text('Framing Suggestion', startX, y);
 
     doc.setFont('helvetica', 'normal');
-    y += 6;
     doc.setFontSize(10);
     doc.setTextColor(60);
+    y += 4;
 
-    doc.text(
-      'We recommend using a quality frame with acid-free backing. This helps keep your artwork\n' +
-        'flat and stable over time, preventing warping or bending—especially for larger pieces\n' +
-        'or artwork on thinner paper.',
-      startX,
-      y,
-    );
+    const framingText =
+      'Obviously, a nice frame will enhance your art. Discuss with your local frame shop, but we suggest adding a backing to the art. It keeps everything flat and stable so your piece doesn’t warp, bend, or shift over time… especially for larger works or anything on thinner paper. It should not be an extra expense and make sure they use acid-free backing.';
+    const framingLines = doc.splitTextToSize(framingText, contentWidth);
+    doc.text(framingLines, startX, y);
+    y += framingLines.length * lineHeight + sectionGap;
 
-    y += 16;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0);
-    doc.text('Need Help?', startX, y);
-
-    doc.setFont('helvetica', 'normal');
-    y += 6;
-    doc.setFontSize(10);
-    doc.setTextColor(60);
-    doc.text(
-      'Email: pearlartgalleries@gmail.com\nCall us on WhatsApp: +256 776 286 453',
-      startX,
-      y,
-    );
-
-    doc.setTextColor(0);
+    // -------------------------------
+    // CONTACT INFO
+    // -------------------------------
+    const contactText =
+      'If you have any questions you can reach out to us at:\nEmail: pearlartgalleries@gmail.com\nCall us on WhatsApp: +256 776 286 453';
+    const contactLines = doc.splitTextToSize(contactText, contentWidth);
+    doc.text(contactLines, startX, y);
+    y += contactLines.length * lineHeight;
 
     //Footer
 
