@@ -11,78 +11,150 @@ import {
   export class CartItemService {
     constructor(private prisma: PrismaService) {}
   
+    // async addCartItem(addItemInput: AddCartItemInput, clientId: number) {
+    //   const { artworkId, quantity, price } = addItemInput;
+
+    //   const artwork = await this.prisma.artwork.findUnique({
+    //     where: { id: artworkId },
+    //   });
+
+    //   if (!artwork?.isAvailable) {
+    //     throw new BadRequestException('This artwork is no longer available');
+    //   }
+
+    //   // await this.prisma.artwork.update({
+    //   //   where: { id: artworkId },
+    //   //   data: { 
+    //   //     reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+    //   //     isAvailable: false
+    //   //   }
+    //   // });
+  
+    //   let cart = await this.prisma.cart.findFirst({
+    //     where: { customerId: clientId },
+    //   });
+  
+    //   if (!cart) {
+    //     try {
+    //       cart = await this.prisma.cart.create({
+    //         data: {
+    //           customerId: clientId,
+    //           totalAmount: price * quantity,
+    //         },
+    //       });
+    //     } catch (error) {
+    //       throw new InternalServerErrorException("Failed to create cart.");
+    //     }
+    //   }
+  
+    //   const existingItem = await this.prisma.cartItem.findFirst({
+    //     where: {
+    //       cartId: cart.id,
+    //       artworkId,
+    //     },
+    //   });
+  
+    //   try {
+    //     if (existingItem) {
+    //       const updatedItem = await this.prisma.cartItem.update({
+    //         where: { id: existingItem.id },
+    //         data: {
+    //           quantity: { increment: quantity },
+    //           price,
+    //         },
+    //       });
+  
+    //       await this.updateCartTotal(cart.id);
+    //       return updatedItem;
+    //     } else {
+    //       const newItem = await this.prisma.cartItem.create({
+    //         data: {
+    //           cartId: cart.id,
+    //           artworkId,
+    //           quantity,
+    //           price,
+    //         },
+    //       });
+  
+    //       await this.updateCartTotal(cart.id);
+    //       return newItem;
+    //     }
+    //   } catch (error) {
+    //     throw new InternalServerErrorException("Failed to add/update cart item.");
+    //   }
+    // }
+
     async addCartItem(addItemInput: AddCartItemInput, clientId: number) {
-      const { artworkId, quantity, price } = addItemInput;
+  const { artworkId, quantity, price } = addItemInput;
 
-      const artwork = await this.prisma.artwork.findUnique({
-        where: { id: artworkId },
-      });
+  const artwork = await this.prisma.artwork.findUnique({
+    where: { id: artworkId },
+  });
 
-      if (!artwork?.isAvailable) {
-        throw new BadRequestException('This artwork is no longer available');
-      }
+  if (!artwork?.isAvailable) {
+    throw new BadRequestException('This artwork is no longer available');
+  }
 
-      // await this.prisma.artwork.update({
-      //   where: { id: artworkId },
-      //   data: { 
-      //     reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
-      //     isAvailable: false
-      //   }
-      // });
-  
-      let cart = await this.prisma.cart.findFirst({
-        where: { customerId: clientId },
-      });
-  
-      if (!cart) {
-        try {
-          cart = await this.prisma.cart.create({
-            data: {
-              customerId: clientId,
-              totalAmount: price * quantity,
-            },
-          });
-        } catch (error) {
-          throw new InternalServerErrorException("Failed to create cart.");
-        }
-      }
-  
-      const existingItem = await this.prisma.cartItem.findFirst({
-        where: {
-          cartId: cart.id,
-          artworkId,
+  return this.prisma.$transaction(async (tx) => {
+    let cart = await tx.cart.findFirst({
+      where: { customerId: clientId },
+    });
+
+    if (!cart) {
+      cart = await tx.cart.create({
+        data: {
+          customerId: clientId,
+          totalAmount: 0,
         },
       });
-  
-      try {
-        if (existingItem) {
-          const updatedItem = await this.prisma.cartItem.update({
-            where: { id: existingItem.id },
-            data: {
-              quantity: { increment: quantity },
-              price,
-            },
-          });
-  
-          await this.updateCartTotal(cart.id);
-          return updatedItem;
-        } else {
-          const newItem = await this.prisma.cartItem.create({
-            data: {
-              cartId: cart.id,
-              artworkId,
-              quantity,
-              price,
-            },
-          });
-  
-          await this.updateCartTotal(cart.id);
-          return newItem;
-        }
-      } catch (error) {
-        throw new InternalServerErrorException("Failed to add/update cart item.");
-      }
     }
+
+    const existingItem = await tx.cartItem.findFirst({
+      where: {
+        cartId: cart.id,
+        artworkId,
+      },
+    });
+
+    let result;
+
+    if (existingItem) {
+      result = await tx.cartItem.update({
+        where: { id: existingItem.id },
+        data: {
+          quantity: { increment: quantity },
+          price,
+        },
+      });
+    } else {
+      result = await tx.cartItem.create({
+        data: {
+          cartId: cart.id,
+          artworkId,
+          quantity,
+          price,
+        },
+      });
+    }
+
+    const items = await tx.cartItem.findMany({
+      where: { cartId: cart.id },
+    });
+
+    const total = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
+    await tx.cart.update({
+      where: { id: cart.id },
+      data: { totalAmount: total },
+    });
+
+    return result;
+  });
+}
+
   
     async cartItemIncrement(itemId: number, clientId: number) {
       const cartItem = await this.prisma.cartItem.findUnique({
@@ -160,9 +232,10 @@ import {
         });
   
         if (remainingItems.length === 0) {
-          await this.prisma.cart.delete({
-            where: { id: cartId },
-          });
+          await this.prisma.cart.update({
+            where: {id: cartId},
+            data: {totalAmount: 0}
+          })
         } else {
           await this.updateCartTotal(cartId);
         }
@@ -203,9 +276,10 @@ import {
         });
   
         if (remainingItems.length === 0) {
-          await this.prisma.cart.delete({
-            where: { id: cartId },
-          });
+          await this.prisma.cart.update({
+            where: {id: cartId},
+            data: {totalAmount: 0}
+          })
         } else {
           await this.updateCartTotal(cartId);
         }
