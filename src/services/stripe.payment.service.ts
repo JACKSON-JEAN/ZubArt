@@ -391,7 +391,7 @@ export class StripePaymentService {
     y += 4;
 
     const shippingText =
-      'Thanks for your order!\nWe will ship your art in a secure poster tube within 72 hours via DHL. After your order has shipped we will forward you the tracking information.';
+      'Thanks for your order!\nWe will ship your art in a secure poster tube within 72 hours via DHL. After your order has been shipped we will forward you the tracking information.';
     const shippingLines = doc.splitTextToSize(shippingText, contentWidth);
     doc.text(shippingLines, startX, y);
     y += shippingLines.length * lineHeight + sectionGap;
