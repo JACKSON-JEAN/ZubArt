@@ -58,6 +58,7 @@ export class ArtworkService {
                            ? {
                             OR: [
                                 {title: {contains: keyword, mode: 'insensitive'}},
+                                {description: {contains: keyword, mode: 'insensitive'}},
                                 {culturalOrigin: {contains: keyword, mode: 'insensitive'}},
                                 {
                                     artisan: {
