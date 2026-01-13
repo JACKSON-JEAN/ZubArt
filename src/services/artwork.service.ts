@@ -1,158 +1,206 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "./prisma.service";
-import { AddArtworkInput } from "src/graphql/input/add_artwork.input";
-import { UpdateArtworkInput } from "src/graphql/input/update_artwork.input";
-import { SearchArtworkInput } from "src/graphql/input/search_artwork.input";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+import { AddArtworkInput } from 'src/graphql/input/add_artwork.input';
+import { UpdateArtworkInput } from 'src/graphql/input/update_artwork.input';
+import { SearchArtworkInput } from 'src/graphql/input/search_artwork.input';
 
 @Injectable()
 export class ArtworkService {
-    constructor(private prismaService: PrismaService){}
+  constructor(private prismaService: PrismaService) {}
 
-    async AddArtwork(artworkinput: AddArtworkInput){
-        const {title, description, category, culturalOrigin, price, currency} = artworkinput
+  async AddArtwork(artworkinput: AddArtworkInput) {
+    const { title, description, category, culturalOrigin, price, currency } =
+      artworkinput;
 
-        if(!title || !description || !category || !culturalOrigin || !price || !currency){
-            throw new BadRequestException("Please enter all the required fields")
-        }
-        try {
-            const addedArtwork = await this.prismaService.artwork.create({
-                data: {
-                    title: artworkinput.title,
-                    description: artworkinput.description,
-                    material: artworkinput.material || null,
-                    imageHash: artworkinput.imageHash || null,
-                    yearCreated: artworkinput.yearCreated || null,
-                    category: artworkinput.category,
-                    widthCm: artworkinput.widthCm || null,
-                    heightCm: artworkinput.heightCm || null,
-                    weightKg: artworkinput.weightKg || null,
-                    isUnique: artworkinput.isUnique || true,
-                    isAvailable: artworkinput.isAvailable || true,
-                    isFeatured: artworkinput.isFeatured || false,
-                    culturalOrigin: artworkinput.culturalOrigin,
-                    artisanId: artworkinput.artisanId || null,
-                    price: artworkinput.price,
-                    currency: artworkinput.currency
+    if (
+      !title ||
+      !description ||
+      !category ||
+      !culturalOrigin ||
+      !price ||
+      !currency
+    ) {
+      throw new BadRequestException('Please enter all the required fields');
+    }
+    try {
+      const addedArtwork = await this.prismaService.artwork.create({
+        data: {
+          title: artworkinput.title,
+          description: artworkinput.description,
+          material: artworkinput.material || null,
+          imageHash: artworkinput.imageHash || null,
+          yearCreated: artworkinput.yearCreated || null,
+          category: artworkinput.category,
+          widthCm: artworkinput.widthCm || null,
+          heightCm: artworkinput.heightCm || null,
+          weightKg: artworkinput.weightKg || null,
+          isUnique: artworkinput.isUnique || true,
+          isAvailable: artworkinput.isAvailable || true,
+          isFeatured: artworkinput.isFeatured || false,
+          culturalOrigin: artworkinput.culturalOrigin,
+          artisanId: artworkinput.artisanId || null,
+          price: artworkinput.price,
+          currency: artworkinput.currency,
+        },
+      });
+      return addedArtwork;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'An error occured when adding artwork',
+      );
+    }
+  }
+
+  async getArtwork(
+    searchInput: SearchArtworkInput & { cursor?: number; limit?: number },
+  ) {
+    const {
+      keyword,
+      category,
+      yearCreated,
+      minPrice,
+      maxPrice,
+      isAvailable = true,
+      isFeatured,
+      cursor,
+      limit = 12,
+    } = searchInput;
+
+    try {
+      const artworks = await this.prismaService.artwork.findMany({
+        where: {
+          AND: [
+            category ? { category } : {},
+            yearCreated ? { yearCreated } : {},
+            isFeatured !== undefined ? { isFeatured } : {},
+            minPrice !== undefined ? { price: { gte: minPrice } } : {},
+            maxPrice !== undefined ? { price: { lte: maxPrice } } : {},
+            keyword
+              ? {
+                  OR: [
+                    { title: { contains: keyword, mode: 'insensitive' } },
+                    { description: { contains: keyword, mode: 'insensitive' } },
+                    {
+                      culturalOrigin: {
+                        contains: keyword,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      artisan: {
+                        fullName: { contains: keyword, mode: 'insensitive' },
+                      },
+                    },
+                  ],
                 }
-            })
-            return addedArtwork
+              : {},
+          ],
+        },
+        include: {
+          media: true,
+          artisan: true,
+          reviews: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        cursor: cursor ? { id: cursor } : undefined,
+        skip: cursor ? 1 : 0,
+        take: limit,
+      });
+      const lastItem = artworks[artworks.length - 1];
 
-        } catch (error) {
-            throw new InternalServerErrorException("An error occured when adding artwork")
-        }
+      return {
+        artworks,
+        nextCursor: lastItem ? lastItem.id : null,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'There was an error when fetching artwork',
+      );
+    }
+  }
+
+  async getNewArrivals() {
+    try {
+      return await this.prismaService.artwork.findMany({
+        where: { isAvailable: true },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        include: {
+          media: true,
+          artisan: true,
+          reviews: true,
+        },
+        take: 4,
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'There was an error when fetching data',
+      );
+    }
+  }
+
+  async getArtworkById(artworkId: number) {
+    const artwork = await this.prismaService.artwork.findUnique({
+      where: { id: artworkId },
+      include: {
+        media: true,
+        artisan: true,
+        reviews: true,
+      },
+    });
+
+    if (!artwork) {
+      throw new NotFoundException(`No artwork with ID: ${artworkId} found!`);
     }
 
-    async getArtwork(searchInput: SearchArtworkInput){
-        const {keyword, category, yearCreated, minPrice, maxPrice, isAvailable = true, isFeatured } = searchInput
+    return artwork;
+  }
 
-        try {
-            return await this.prismaService.artwork.findMany({
-                where: {
-                    AND: [
-                        category ? {category} : {},
-                        yearCreated ? {yearCreated} : {},
-                        isFeatured !== undefined ? {isFeatured} : {},
-                        minPrice !== undefined ? {price: {gte: minPrice}} : {},
-                        maxPrice !== undefined ? {price: {lte: maxPrice}} : {},
-                        keyword 
-                           ? {
-                            OR: [
-                                {title: {contains: keyword, mode: 'insensitive'}},
-                                {description: {contains: keyword, mode: 'insensitive'}},
-                                {culturalOrigin: {contains: keyword, mode: 'insensitive'}},
-                                {
-                                    artisan: {
-                                        fullName: {contains: keyword, mode: 'insensitive'}
-                                    }
-                                }
-                            ]
-                           } : {}
-                    ]
-                },
-                include: {
-                    media: true,
-                    artisan: true,
-                    reviews: true,
-                },
-                orderBy: {createdAt: 'desc'}
-            })
-        } catch (error) {
-          throw new InternalServerErrorException("There was an error when fetching artwork")  
-        }
+  async updateArtwork(artworkId: number, updateInput: UpdateArtworkInput) {
+    const artwork = await this.prismaService.artwork.findUnique({
+      where: { id: artworkId },
+    });
+
+    if (!artwork) {
+      throw new NotFoundException(`No artwork with ID: ${artworkId} found`);
     }
 
-    async getNewArrivals() {
-        try {
-            return await this.prismaService.artwork.findMany({
-                where: {isAvailable: true},
-                orderBy: {
-                    createdAt: "asc"
-                },
-                include: {
-                    media: true,
-                    artisan: true,
-                    reviews: true
-                },
-                take: 4
-            })
-        } catch (error) {
-            throw new InternalServerErrorException("There was an error when fetching data")
-        }
+    try {
+      const updatedArtwork = await this.prismaService.artwork.update({
+        where: { id: artworkId },
+        data: updateInput,
+      });
+
+      return updatedArtwork;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'There was an error when updating artwork',
+      );
+    }
+  }
+
+  async deleteArtwork(artworkId: number) {
+    const artwork = await this.prismaService.artwork.findUnique({
+      where: { id: artworkId },
+    });
+
+    if (!artwork) {
+      throw new NotFoundException(`No artwork with ID: ${artworkId} found`);
     }
 
-    async getArtworkById(artworkId: number){
-        const artwork = await this.prismaService.artwork.findUnique({
-            where: {id: artworkId},
-            include: {
-                media: true,
-                artisan: true,
-                reviews: true
-            }
-        })
-
-        if(!artwork){
-            throw new NotFoundException(`No artwork with ID: ${artworkId} found!`)
-        }
-
-        return artwork
+    try {
+      await this.prismaService.artwork.delete({ where: { id: artworkId } });
+      return 'Artwork deleted successfully';
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'There was an error when deleting artwork',
+      );
     }
-
-    async updateArtwork(artworkId: number, updateInput: UpdateArtworkInput) {
-        const artwork = await this.prismaService.artwork.findUnique({
-            where: {id: artworkId}
-        })
-
-        if(!artwork){
-            throw new NotFoundException(`No artwork with ID: ${artworkId} found`)
-        } 
-
-        try {
-            const updatedArtwork = await this.prismaService.artwork.update({
-                where: {id: artworkId},
-                data: updateInput
-            })
-
-            return updatedArtwork
-        } catch (error) {
-            throw new InternalServerErrorException("There was an error when updating artwork")
-        }
-    }
-
-    async deleteArtwork(artworkId: number){
-        const artwork = await this.prismaService.artwork.findUnique({
-            where: {id: artworkId}
-        })
-
-        if(!artwork){
-            throw new NotFoundException(`No artwork with ID: ${artworkId} found`)
-        } 
-
-        try {
-            await this.prismaService.artwork.delete({ where: { id: artworkId}})
-            return "Artwork deleted successfully"
-            
-        } catch (error) {
-            throw new InternalServerErrorException("There was an error when deleting artwork")
-        }
-    }
+  }
 }

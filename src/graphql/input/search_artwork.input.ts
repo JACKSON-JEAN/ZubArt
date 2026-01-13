@@ -1,10 +1,15 @@
-import { Field, Float, InputType, Int, registerEnumType } from "@nestjs/graphql";
-import { Category } from "generated/prisma";
-
+import {
+  Field,
+  Float,
+  InputType,
+  Int,
+  registerEnumType,
+} from '@nestjs/graphql';
+import { Category } from 'generated/prisma';
 
 registerEnumType(Category, {
-    name: "Category"
-})
+  name: 'Category',
+});
 
 @InputType()
 export class SearchArtworkInput {
@@ -22,6 +27,12 @@ export class SearchArtworkInput {
 
   @Field(() => Float, { nullable: true })
   maxPrice?: number;
+
+  @Field(() => Int, { nullable: true })
+  cursor?: number;
+
+  @Field(() => Int, { nullable: true })
+  limit?: number;
 
   @Field(() => Boolean, { nullable: true, defaultValue: true })
   isAvailable?: boolean;

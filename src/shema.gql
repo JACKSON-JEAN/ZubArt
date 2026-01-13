@@ -133,6 +133,11 @@ type AddressModel {
   orders: [OrderModel!]
 }
 
+type ArtworkConnection {
+  artworks: [ArtworkModel!]!
+  nextCursor: Int
+}
+
 """authentication response"""
 type AuthResponse {
   """auth access_token"""
@@ -221,7 +226,7 @@ enum SubscriberStatus {
 }
 
 type Query {
-  getArtwork(searchInput: SearchArtworkInput!): [ArtworkModel!]!
+  getArtwork(searchInput: SearchArtworkInput!): ArtworkConnection!
   getNewArrivals: [ArtworkModel!]!
   getArtworkById(artworkId: Float!): ArtworkModel!
   getArtisans(searchInput: SearchArtisanInput!): [ArtisanModel!]!
@@ -255,6 +260,8 @@ input SearchArtworkInput {
   yearCreated: Int
   minPrice: Float
   maxPrice: Float
+  cursor: Int
+  limit: Int
   isAvailable: Boolean = true
   isFeatured: Boolean
 }
