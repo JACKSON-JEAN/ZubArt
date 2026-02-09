@@ -115,6 +115,9 @@ export class OrderService {
             }
           }
         },
+        orderBy: {
+          createdAt: "desc"
+        }
       });
     } catch (error) {
       throw new InternalServerErrorException(
