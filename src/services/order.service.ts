@@ -109,6 +109,11 @@ export class OrderService {
         include: {
           customer: true,
           shippingAddress: true,
+          items: {
+            include: {
+              artwork: true,
+            }
+          }
         },
       });
     } catch (error) {
