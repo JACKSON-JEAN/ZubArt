@@ -5,6 +5,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { ROLES_KEY } from 'src/decorators/roles.decorator';
 
 @Injectable()
+@Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
@@ -13,14 +14,15 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-
-    if (!requiredRoles) {
-      return true;
-    }
+    if (!requiredRoles) return true;
 
     const ctx = GqlExecutionContext.create(context);
     const user = ctx.getContext().req.user;
 
+    // SAFETY CHECK
+    if (!user) return false;
+
     return requiredRoles.includes(user.role);
   }
 }
+
