@@ -15,12 +15,21 @@ export class ArtworkResolver {
   constructor(private artworkService: ArtworkService) {}
 
   @Mutation(() => ArtworkModel)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   async addArtwork(@Args('addArtworkInput') addArtworkInput: AddArtworkInput) {
     return await this.artworkService.AddArtwork(addArtworkInput);
   }
 
   @Query(() => ArtworkConnection)
   async getArtwork(@Args('searchInput') searchInput: SearchArtworkInput) {
+    return await this.artworkService.getArtwork(searchInput);
+  }
+
+  @Query(() => ArtworkConnection)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getAdminArtwork(@Args('searchInput') searchInput: SearchArtworkInput) {
     return await this.artworkService.getArtwork(searchInput);
   }
 
@@ -35,6 +44,8 @@ export class ArtworkResolver {
   }
 
   @Mutation(() => ArtworkModel)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   async updateArtwork(
     @Args('artworkId') artworkId: number,
     @Args('updateArtworkInput') updateArtworkInput: UpdateArtworkInput,
