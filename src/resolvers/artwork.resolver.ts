@@ -5,6 +5,10 @@ import { UpdateArtworkInput } from '../graphql/input/update_artwork.input';
 import { ArtworkModel } from '../graphql/models/artwork.model';
 import { ArtworkService } from '../services/artwork.service';
 import { ArtworkConnection } from 'src/graphql/models/ArtworkConnection.model';
+import { Roles } from 'src/decorators/roles.decorator';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 @Resolver(() => ArtworkModel)
 export class ArtworkResolver {
@@ -42,6 +46,8 @@ export class ArtworkResolver {
   }
 
   @Mutation(() => String)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   async deleteArtwork(@Args('artworkId') artworkId: number) {
     return await this.artworkService.deleteArtwork(artworkId);
   }

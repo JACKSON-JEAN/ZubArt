@@ -24,14 +24,18 @@ async function bootstrap() {
   );
 
   app.useGlobalPipes(new ValidationPipe());
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000'];
+
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'Accept',
-      'apollo-require-preflight',
+      'Apollo-Require-Preflight',
     ],
     credentials: true,
     maxAge: 86400,
