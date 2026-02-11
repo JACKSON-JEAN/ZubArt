@@ -111,7 +111,11 @@ export class OrderService {
           shippingAddress: true,
           items: {
             include: {
-              artwork: true,
+              artwork: {
+                include: {
+                  media: true,
+                }
+              },
             }
           }
         },
